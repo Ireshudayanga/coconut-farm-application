@@ -9,10 +9,15 @@ export default function QRScanPage() {
   const handleScan = (data) => {
     if (data) {
       console.log('Scanned:', data);
-      router.push(`/tree/${encodeURIComponent(data)}`);
+  
+      // Delay navigation to avoid hydration/layout crash
+      setTimeout(() => {
+        router.push(`/tree/${encodeURIComponent(data)}`);
+      }, 300);
     }
   };
-
+  
+  
   const handleError = (error) => {
     if (
       typeof error === 'string' &&
