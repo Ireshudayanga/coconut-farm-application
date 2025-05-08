@@ -38,7 +38,7 @@ export default function FarmerPage() {
           transition={{ duration: 0.6 }}
           className="text-center"
         >
-          <h1 className="text-4xl font-bold sm:text-5xl mb-2">🌴 Farmer Dashboard</h1>
+          <h1 className="text-4xl font-bold sm:text-5xl mb-2">Farmer Dashboard</h1>
           <p className="text-gray-400 text-base sm:text-lg">Manage your trees with ease</p>
         </motion.div>
 
