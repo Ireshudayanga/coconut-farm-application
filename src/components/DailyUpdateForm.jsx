@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import ImageUploader from './ImageUploader';
+import { useEffect } from 'react';
+
 
 export default function DailyUpdateForm({ treeId }) {
   if (!treeId || typeof treeId !== 'string') {
     return (
       <div className="text-red-500 text-center mt-4">
-        ❌ Tree ID is missing or invalid.
+        Tree ID is missing or invalid.
       </div>
     );
   }
@@ -19,14 +21,31 @@ export default function DailyUpdateForm({ treeId }) {
   const [flags, setFlags] = useState([]);
   const [imageFile, setImageFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [availableFertilizers, setAvailableFertilizers] = useState([]);
   const [showTooltip, setShowTooltip] = useState(false); // For mobile tooltip
 
-  const today = new Date().toISOString().split('T')[0];
-  const flagOptions = ['🌴', '🐛', '⚠️', '🌧️'];
+  useEffect(() => {
+    fetch('/api/fertilizers')
+      .then(res => res.json())
+      .then(data => setAvailableFertilizers(data.fertilizers))
+      .catch(console.error);
+  }, []);
 
-  const toggleFlag = (flag) => {
+
+  const today = new Date().toISOString().split('T')[0];
+  const flagOptions = [0, 1, 2, 3];
+
+  const flagMap = {
+    0: '🌴',
+    1: '🐛',
+    2: '⚠️',
+    3: '🌧️',
+  };
+
+
+  const toggleFlag = (flagNum) => {
     setFlags((prev) =>
-      prev.includes(flag) ? prev.filter((f) => f !== flag) : [...prev, flag]
+      prev.includes(flagNum) ? prev.filter((f) => f !== flagNum) : [...prev, flagNum]
     );
   };
 
@@ -53,7 +72,7 @@ export default function DailyUpdateForm({ treeId }) {
       });
 
       if (res.ok) {
-        alert('✅ Tree update submitted!');
+        alert('Tree update submitted!');
       } else {
         alert('❌ Failed to submit. Try again.');
       }
@@ -87,18 +106,16 @@ export default function DailyUpdateForm({ treeId }) {
           <button
             type="button"
             onClick={() => setWatered(true)}
-            className={`px-4 py-2 rounded-lg ${
-              watered ? 'bg-green-600' : 'bg-gray-700'
-            }`}
+            className={`px-4 py-2 rounded-lg ${watered ? 'bg-green-600' : 'bg-gray-700'
+              }`}
           >
             Yes
           </button>
           <button
             type="button"
             onClick={() => setWatered(false)}
-            className={`px-4 py-2 rounded-lg ${
-              watered === false ? 'bg-red-600' : 'bg-gray-700'
-            }`}
+            className={`px-4 py-2 rounded-lg ${watered === false ? 'bg-red-600' : 'bg-gray-700'
+              }`}
           >
             No
           </button>
@@ -108,18 +125,32 @@ export default function DailyUpdateForm({ treeId }) {
       {/* Fertilizers */}
       <div>
         <label className="block mb-1 text-gray-300">Fertilizers</label>
-        <select
-          multiple
-          className="w-full bg-gray-800 text-white border border-gray-600 rounded-lg p-2"
-          onChange={(e) =>
-            setFertilizers(Array.from(e.target.selectedOptions).map((o) => o.value))
-          }
-        >
-          <option value="Urea">Urea</option>
-          <option value="Compost">Compost</option>
-          <option value="NPK">NPK</option>
-          <option value="Organic Mix">Organic Mix</option>
-        </select>
+        <div>
+          <div className="flex flex-wrap gap-3">
+            {availableFertilizers.map((fertilizer) => (
+              <label
+                key={fertilizer}
+                className="flex items-center space-x-2 text-white text-sm"
+              >
+                <input
+                  type="checkbox"
+                  value={fertilizer}
+                  checked={fertilizers.includes(fertilizer)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFertilizers((prev) =>
+                      prev.includes(value)
+                        ? prev.filter((f) => f !== value)
+                        : [...prev, value]
+                    );
+                  }}
+                  className="accent-green-500"
+                />
+                <span>{fertilizer}</span>
+              </label>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Pest Notes */}
@@ -171,18 +202,18 @@ export default function DailyUpdateForm({ treeId }) {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {flagOptions.map((flag) => (
+          {flagOptions.map((flagNum) => (
             <button
-              key={flag}
+              key={flagNum}
               type="button"
-              onClick={() => toggleFlag(flag)}
-              className={`px-3 py-2 rounded-full text-xl ${
-                flags.includes(flag) ? 'bg-blue-600' : 'bg-gray-700'
-              }`}
+              onClick={() => toggleFlag(flagNum)}
+              className={`px-3 py-2 rounded-full text-xl ${flags.includes(flagNum) ? 'bg-blue-600' : 'bg-gray-700'
+                }`}
             >
-              {flag}
+              {flagMap[flagNum]}
             </button>
           ))}
+
         </div>
       </div>
 

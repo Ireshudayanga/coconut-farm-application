@@ -26,7 +26,7 @@ export default function QRCodeScanner() {
             }
           },
           (error) => {
-            // optional: console.log('Scan error', error);
+            // console.log('Scan error', error);
           }
         );
       } catch (err) {

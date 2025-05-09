@@ -8,26 +8,51 @@ import { motion } from 'framer-motion';
 export default function TreeUpdatePage() {
   const params = useParams();
   const [treeId, setTreeId] = useState(null);
+  const [isValidTree, setIsValidTree] = useState(null);
   const [dateTime, setDateTime] = useState({
+
     date: '',
     time: '',
   });
 
   useEffect(() => {
-    if (params?.id && typeof params.id === 'string') {
-      setTreeId(params.id);
-    }
+    const fetchData = async () => {
+      if (params?.id && typeof params.id === 'string') {
+        setTreeId(params.id);
 
-    const now = new Date();
-    const date = now.toISOString().slice(0, 10); // yyyy-mm-dd
-    const time = now.toTimeString().slice(0, 5); // hh:mm
-    setDateTime({ date, time });
+        try {
+          const res = await fetch(`/api/tree?id=${params.id}`);
+          const data = await res.json();
+
+          setIsValidTree(data.exists);
+        } catch (error) {
+          console.error('Error validating tree ID:', error);
+          setIsValidTree(false);
+        }
+
+        const now = new Date();
+        setDateTime({
+          date: now.toISOString().slice(0, 10),
+          time: now.toTimeString().slice(0, 5),
+        });
+      }
+    };
+
+    fetchData();
   }, [params]);
 
-  if (!treeId) {
+  if (!treeId || isValidTree === null) {
     return (
       <div className="min-h-screen bg-gray-950 text-gray-400 flex items-center justify-center text-base">
-        Loading tree information...
+        Checking tree information...
+      </div>
+    );
+  }
+
+  if (!isValidTree) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-red-400 flex items-center justify-center text-center px-4 text-base">
+       Tree ID not found. Please check the link or contact support.
       </div>
     );
   }
@@ -35,7 +60,6 @@ export default function TreeUpdatePage() {
   return (
     <div className="min-h-screen bg-gray-950 text-white px-4 py-10 sm:px-6">
       <div className="max-w-3xl mx-auto space-y-8">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -53,7 +77,6 @@ export default function TreeUpdatePage() {
           </p>
         </motion.div>
 
-        {/* Daily Update Form */}
         <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-md p-6 sm:p-8 space-y-6">
           <DailyUpdateForm treeId={treeId} date={dateTime.date} time={dateTime.time} />
         </div>
