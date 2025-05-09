@@ -1,48 +1,52 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import QRScanner from '@/components/QRScanner';
+import QRCodeScanner from '../../components/QRCodeScanner';
+import { motion } from 'framer-motion';
+import Link from 'next/link';
 
-export default function QRScanPage() {
-  const router = useRouter();
-
-  const handleScan = (data) => {
-    if (data) {
-      console.log('Scanned:', data);
-  
-      // Delay navigation to avoid hydration/layout crash
-      setTimeout(() => {
-        router.push(`/tree/${encodeURIComponent(data)}`);
-      }, 300);
-    }
-  };
-  
-  
-  const handleError = (error) => {
-    if (
-      typeof error === 'string' &&
-      (error.includes('NotFoundException') || error.includes('No barcode or QR code'))
-    ) {
-      return;
-    }
-    console.error('QR scan error:', error);
-  };
-
+export default function ScanPage() {
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center">
-          <h1 className="text-3xl sm:text-4xl font-bold mb-2">Scan Tree QR Code</h1>
-          <p className="text-gray-400 text-sm sm:text-base">
-            Point your camera at the QR code on the tree to begin tracking.
+    <div className="min-h-screen bg-gray-950 text-white px-4 py-10 sm:px-6">
+      <div className="max-w-xl mx-auto space-y-8">
+        
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center"
+        >
+          <h1 className="text-3xl sm:text-4xl font-bold text-green-400">
+            Scan Tree QR
+          </h1>
+          <p className="text-gray-400 text-sm sm:text-base mt-2">
+            Align the QR code inside the frame to scan and update tree info.
           </p>
+        </motion.div>
+
+        {/* Scanner Frame */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-4"
+        >
+          <QRCodeScanner />
+        </motion.div>
+
+        {/* Tip + Back Link */}
+        <div className="text-center text-gray-500 text-sm">
+          Make sure your camera is clear and well-lit.
         </div>
 
-        <QRScanner onScan={handleScan} onError={handleError} />
-
-        <p className="text-center text-xs text-gray-500 mt-6">
-          Ensure your camera has permission and the QR code is well-lit.
-        </p>
+        <div className="text-center">
+          <Link
+            href="/"
+            className="inline-block mt-4 text-sm text-green-500 hover:underline transition"
+          >
+            ← Back to Dashboard
+          </Link>
+        </div>
       </div>
     </div>
   );

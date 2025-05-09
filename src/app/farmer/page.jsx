@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { QRCodeCanvas } from 'qrcode.react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 

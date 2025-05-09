@@ -11,7 +11,7 @@ export default function DailyUpdateForm({ treeId }) {
       </div>
     );
   }
-  
+
   const [watered, setWatered] = useState(null);
   const [fertilizers, setFertilizers] = useState([]);
   const [pestNotes, setPestNotes] = useState('');
@@ -19,9 +19,9 @@ export default function DailyUpdateForm({ treeId }) {
   const [flags, setFlags] = useState([]);
   const [imageFile, setImageFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false); // For mobile tooltip
 
   const today = new Date().toISOString().split('T')[0];
-
   const flagOptions = ['🌴', '🐛', '⚠️', '🌧️'];
 
   const toggleFlag = (flag) => {
@@ -66,8 +66,10 @@ export default function DailyUpdateForm({ treeId }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 text-sm">
+    <form onSubmit={handleSubmit} className="space-y-5 text-sm">
       <input type="hidden" name="treeId" value={treeId} />
+
+      {/* Date */}
       <div>
         <label className="block mb-1 text-gray-300">Date</label>
         <input
@@ -78,14 +80,32 @@ export default function DailyUpdateForm({ treeId }) {
         />
       </div>
 
+      {/* Watered */}
       <div>
         <label className="block mb-1 text-gray-300">Watered?</label>
         <div className="flex space-x-4">
-          <button type="button" onClick={() => setWatered(true)} className={`px-4 py-2 rounded-lg ${watered ? 'bg-green-600' : 'bg-gray-700'}`}>Yes</button>
-          <button type="button" onClick={() => setWatered(false)} className={`px-4 py-2 rounded-lg ${watered === false ? 'bg-red-600' : 'bg-gray-700'}`}>No</button>
+          <button
+            type="button"
+            onClick={() => setWatered(true)}
+            className={`px-4 py-2 rounded-lg ${
+              watered ? 'bg-green-600' : 'bg-gray-700'
+            }`}
+          >
+            Yes
+          </button>
+          <button
+            type="button"
+            onClick={() => setWatered(false)}
+            className={`px-4 py-2 rounded-lg ${
+              watered === false ? 'bg-red-600' : 'bg-gray-700'
+            }`}
+          >
+            No
+          </button>
         </div>
       </div>
 
+      {/* Fertilizers */}
       <div>
         <label className="block mb-1 text-gray-300">Fertilizers</label>
         <select
@@ -102,16 +122,19 @@ export default function DailyUpdateForm({ treeId }) {
         </select>
       </div>
 
+      {/* Pest Notes */}
       <div>
         <label className="block mb-1 text-gray-300">Pest / Disease Notes</label>
         <input
           type="text"
           value={pestNotes}
           onChange={(e) => setPestNotes(e.target.value)}
+          placeholder="Describe pests or symptoms"
           className="w-full bg-gray-800 text-white border border-gray-600 rounded-lg px-3 py-2"
         />
       </div>
 
+      {/* General Notes */}
       <div>
         <label className="block mb-1 text-gray-300">General Notes</label>
         <textarea
@@ -122,15 +145,40 @@ export default function DailyUpdateForm({ treeId }) {
         />
       </div>
 
+      {/* Status Flags with tooltip */}
       <div>
-        <label className="block mb-1 text-gray-300">Status Flags</label>
+        <div className="flex items-center justify-between mb-1">
+          <label className="text-gray-300">Status Flags</label>
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowTooltip(!showTooltip)}
+              className="text-sm text-gray-400 hover:text-white transition focus:outline-none"
+            >
+              ⓘ
+            </button>
+
+            {showTooltip && (
+              <div className="absolute z-10 top-6 right-0 w-64 bg-gray-900 text-gray-200 text-xs p-3 rounded-lg shadow-lg border border-gray-700">
+                <p>🌴 — Healthy condition</p>
+                <p>🐛 — Pests observed</p>
+                <p>⚠️ — Needs attention</p>
+                <p>🌧️ — Affected by rain</p>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="flex flex-wrap gap-2">
           {flagOptions.map((flag) => (
             <button
               key={flag}
               type="button"
               onClick={() => toggleFlag(flag)}
-              className={`px-3 py-2 rounded-full text-xl ${flags.includes(flag) ? 'bg-blue-600' : 'bg-gray-700'}`}
+              className={`px-3 py-2 rounded-full text-xl ${
+                flags.includes(flag) ? 'bg-blue-600' : 'bg-gray-700'
+              }`}
             >
               {flag}
             </button>
@@ -138,11 +186,13 @@ export default function DailyUpdateForm({ treeId }) {
         </div>
       </div>
 
+      {/* Image Upload */}
       <div>
         <label className="block mb-1 text-gray-300">Upload Image</label>
         <ImageUploader onImageSelect={setImageFile} />
       </div>
 
+      {/* Submit */}
       <button
         type="submit"
         disabled={submitting}
