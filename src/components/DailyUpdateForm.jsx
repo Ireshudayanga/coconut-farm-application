@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import ImageUploader from './ImageUploader';
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 
 export default function DailyUpdateForm({ treeId }) {
@@ -23,6 +24,7 @@ export default function DailyUpdateForm({ treeId }) {
   const [submitting, setSubmitting] = useState(false);
   const [availableFertilizers, setAvailableFertilizers] = useState([]);
   const [showTooltip, setShowTooltip] = useState(false); // For mobile tooltip
+  const router = useRouter();
 
   useEffect(() => {
     fetch('/api/fertilizers')
@@ -49,6 +51,17 @@ export default function DailyUpdateForm({ treeId }) {
     );
   };
 
+  const resetForm = () => {
+    setWatered(null);
+    setFertilizers([]);
+    setPestNotes('');
+    setNotes('');
+    setFlags([]);
+    setImageFile(null);
+    setSubmitting(false);
+    setShowTooltip(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -73,6 +86,8 @@ export default function DailyUpdateForm({ treeId }) {
 
       if (res.ok) {
         alert('Tree update submitted!');
+        resetForm();
+       // router.push('/farmer');
       } else {
         alert('❌ Failed to submit. Try again.');
       }

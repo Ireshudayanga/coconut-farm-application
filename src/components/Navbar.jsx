@@ -19,7 +19,6 @@ const Navbar = () => {
         <div className="hidden md:flex items-center space-x-6 text-sm font-medium">
           <Link href="/qr-scan" className="hover:text-green-400 transition">Scan QR</Link>
           <Link href="/daily-update" className="hover:text-yellow-400 transition">Daily Update</Link>
-          <Link href="/generate-qr" className="hover:text-green-300 transition">Generate QR</Link>
         </div>
 
         {/* Mobile Toggle */}

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import cloudinary from '@/lib/cloudinary';
 import clientPromise from '@/lib/mongo';
 
+// POST: Save a daily update
 export async function POST(req) {
   try {
     const formData = await req.formData();
@@ -11,6 +12,7 @@ export async function POST(req) {
     const date = formData.get('date');
     const pestNotes = formData.get('pestNotes') || '';
     const notes = formData.get('notes') || '';
+    const fertilizers = JSON.parse(formData.get('fertilizers') || '[]');
     const flags = JSON.parse(formData.get('flags') || '[]');
     const image = formData.get('image');
 
@@ -22,8 +24,8 @@ export async function POST(req) {
       const uploadResult = await new Promise((resolve, reject) => {
         cloudinary.uploader.upload_stream(
           {
-            folder: 'tree-updates',           // optional folder in Cloudinary
-            upload_preset: 'treeFarm',        // ✅ your preset name
+            folder: 'tree-updates',
+            upload_preset: 'treeFarm',
           },
           (error, result) => {
             if (error) reject(error);
@@ -39,6 +41,7 @@ export async function POST(req) {
     await db.collection('updates').insertOne({
       treeId,
       watered,
+      fertilizers,
       date,
       pestNotes,
       notes,
@@ -51,5 +54,32 @@ export async function POST(req) {
   } catch (err) {
     console.error('Upload error:', err);
     return NextResponse.json({ ok: false, error: 'Upload failed' }, { status: 500 });
+  }
+}
+
+// ✅ GET: Fetch updates for dashboard
+export async function GET() {
+  try {
+    const db = (await clientPromise).db();
+    const updates = await db.collection('updates')
+      .find()
+      .sort({ date: -1 }) // optional: latest first
+      .limit(100)
+      .toArray();
+
+    return NextResponse.json({
+      updates: updates.map((u) => ({
+        treeId: u.treeId,
+        watered: u.watered,
+        date: u.date,
+        flags: u.flags || [],
+        notes: u.notes || '',
+        imageUrl: u.imageUrl || null,
+        fertilizers: u.fertilizers || [],
+      })),
+    });
+  } catch (err) {
+    console.error('Fetch error:', err);
+    return NextResponse.json({ ok: false, error: 'Failed to fetch updates' }, { status: 500 });
   }
 }

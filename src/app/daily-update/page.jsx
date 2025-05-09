@@ -1,32 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
-const mockUpdates = [
-  {
-    treeId: 'TREE-001',
-    watered: true,
-    flags: ['🌴'],
-    date: '2024-05-09',
-    notes: 'Healthy and hydrated',
-  },
-  {
-    treeId: 'TREE-002',
-    watered: false,
-    flags: ['🐛', '⚠️'],
-    date: '2024-05-09',
-    notes: 'Pest signs observed',
-  },
-];
+// Mapping numeric flag values to emoji symbols
+const flagMap = {
+  0: '🌴',
+  1: '🐛',
+  2: '⚠️',
+  3: '🌧️',
+};
 
-const flagOptions = ['🌴', '🐛', '⚠️', '🌧️'];
+const flagOptions = [0, 1, 2, 3];
 
 export default function DailyUpdateDashboard() {
+  const [updates, setUpdates] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchId, setSearchId] = useState('');
   const [wateredFilter, setWateredFilter] = useState('');
   const [activeFlags, setActiveFlags] = useState([]);
+  const [dateFilter, setDateFilter] = useState('');
+
+
+  useEffect(() => {
+    const fetchUpdates = async () => {
+      try {
+        const res = await fetch('/api/daily-update');
+        const data = await res.json();
+        setUpdates(data.updates || []);
+      } catch (err) {
+        console.error('Error fetching updates:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUpdates();
+  }, []);
 
   const toggleFlag = (flag) => {
     setActiveFlags((prev) =>
@@ -34,19 +45,20 @@ export default function DailyUpdateDashboard() {
     );
   };
 
-  const filteredUpdates = mockUpdates.filter((item) => {
+  const filteredUpdates = updates.filter((item) => {
     const matchesId = searchId === '' || item.treeId.toLowerCase().includes(searchId.toLowerCase());
     const matchesWater = wateredFilter === '' || item.watered === (wateredFilter === 'yes');
     const matchesFlags =
-      activeFlags.length === 0 || activeFlags.every((flag) => item.flags.includes(flag));
-
-    return matchesId && matchesWater && matchesFlags;
+      activeFlags.length === 0 || activeFlags.every((flag) => item.flags?.includes(flag));
+    const matchesDate = dateFilter === '' || item.date === dateFilter;
+  
+    return matchesId && matchesWater && matchesFlags && matchesDate;
   });
+  
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-4 sm:p-6">
       <div className="max-w-3xl mx-auto space-y-6">
-
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Daily Tree Updates</h1>
@@ -86,20 +98,31 @@ export default function DailyUpdateDashboard() {
             </select>
           </div>
 
+          {/* Date Filter */}
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Date</label>
+            <input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-3 py-2"
+            />
+          </div>
+
+
           {/* Flags */}
           <div>
             <label className="block text-sm text-gray-400 mb-1">Filter by Flags</label>
             <div className="flex flex-wrap gap-2">
-              {flagOptions.map((flag) => (
+              {flagOptions.map((flagNum) => (
                 <button
-                  key={flag}
+                  key={flagNum}
                   type="button"
-                  onClick={() => toggleFlag(flag)}
-                  className={`px-3 py-2 rounded-full text-xl ${
-                    activeFlags.includes(flag) ? 'bg-blue-600' : 'bg-gray-700'
-                  }`}
+                  onClick={() => toggleFlag(flagNum)}
+                  className={`px-3 py-2 rounded-full text-xl ${activeFlags.includes(flagNum) ? 'bg-blue-600' : 'bg-gray-700'
+                    }`}
                 >
-                  {flag}
+                  {flagMap[flagNum]}
                 </button>
               ))}
             </div>
@@ -108,33 +131,47 @@ export default function DailyUpdateDashboard() {
 
         {/* Updates List */}
         <div className="space-y-4">
-          {filteredUpdates.length === 0 ? (
+          {loading ? (
+            <p className="text-center text-gray-400">Loading updates...</p>
+          ) : filteredUpdates.length === 0 ? (
             <p className="text-center text-gray-500">No updates match the selected filters.</p>
           ) : (
-            filteredUpdates.map((update) => (
+            filteredUpdates.map((update, i) => (
               <motion.div
-                key={update.treeId}
+                key={`${update.treeId}-${update.date}-${i}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gray-900 border border-gray-800 rounded-xl p-4 shadow-md"
+                className="bg-gray-900 border border-gray-800 rounded-xl p-4 shadow-md space-y-2"
               >
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-semibold text-green-400">{update.treeId}</span>
+                {/* Header row */}
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-green-400 text-lg">{update.treeId}</span>
                   <span className="text-xs text-gray-400">{update.date}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm mb-1">
+
+                {/* Status badges */}
+                <div className="flex items-center gap-2 text-sm">
                   <span
-                    className={`px-2 py-1 rounded ${
-                      update.watered ? 'bg-green-700' : 'bg-red-700'
-                    }`}
+                    className={`px-2 py-1 rounded text-xs font-semibold ${update.watered ? 'bg-green-700' : 'bg-red-700'
+                      }`}
                   >
                     {update.watered ? 'Watered' : 'Not Watered'}
                   </span>
-                  {update.flags.map((flag) => (
-                    <span key={flag}>{flag}</span>
-                  ))}
+
+                  {/* ✅ Render numeric flags as emojis */}
+                  {Array.isArray(update.flags) && update.flags.length > 0 ? (
+                    update.flags.map((flagNum, idx) => (
+                      <span key={idx} className="text-xl">{flagMap[flagNum]}</span>
+                    ))
+                  ) : (
+                    <span className="text-gray-500 text-xs italic">No Flags</span>
+                  )}
                 </div>
-                <p className="text-gray-400 text-sm">{update.notes}</p>
+
+                {/* Notes */}
+                {update.notes && (
+                  <p className="text-gray-400 text-sm">{update.notes}</p>
+                )}
               </motion.div>
             ))
           )}
