@@ -57,13 +57,17 @@ export async function POST(req) {
   }
 }
 
-// ✅ GET: Fetch updates for dashboard
-export async function GET() {
+export async function GET(req) {
   try {
     const db = (await clientPromise).db();
+    const { searchParams } = new URL(req.url);
+    const treeId = searchParams.get('treeId');
+
+    const query = treeId ? { treeId } : {}; // ✅ filter if provided
+
     const updates = await db.collection('updates')
-      .find()
-      .sort({ date: -1 }) // optional: latest first
+      .find(query)
+      .sort({ date: -1 })
       .limit(100)
       .toArray();
 
@@ -83,3 +87,4 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: 'Failed to fetch updates' }, { status: 500 });
   }
 }
+

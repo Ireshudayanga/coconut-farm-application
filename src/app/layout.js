@@ -1,20 +1,21 @@
-// app/layout.jsx
+// src/app/layout.js
+'use client';
+
 import './globals.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-
-export const metadata = {
-  title: 'TreeFarm App',
-  description: 'Manage your coconut tree farm with QR tracking.',
-};
+import { usePathname } from 'next/navigation';
 
 export default function RootLayout({ children }) {
+  const pathname = usePathname();
+  const isOwnerRoute = pathname.startsWith('/owner');
+
   return (
     <html lang="en">
       <body className="bg-gray-950 text-white">
-        <Navbar />
+        {!isOwnerRoute && <Navbar />}
         <main className="min-h-screen">{children}</main>
-        <Footer />
+        {!isOwnerRoute && <Footer />}
       </body>
     </html>
   );

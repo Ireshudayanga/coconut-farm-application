@@ -87,7 +87,7 @@ export default function DailyUpdateForm({ treeId }) {
       if (res.ok) {
         alert('Tree update submitted!');
         resetForm();
-       // router.push('/farmer');
+        router.push('/farmer');
       } else {
         alert('❌ Failed to submit. Try again.');
       }
