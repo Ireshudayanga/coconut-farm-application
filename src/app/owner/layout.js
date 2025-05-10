@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   ArrowLeft,
+  FlaskConical,
 } from 'lucide-react';
 import '@/app/globals.css';
 
@@ -17,6 +18,7 @@ const navItems = [
   { label: 'Dashboard', href: '/owner/dashboard', icon: <Home className="w-5 h-5" /> },
   { label: 'Analytics', href: '/owner/analytics', icon: <BarChart className="w-5 h-5" /> },
   { label: 'All Trees', href: '/owner/tree', icon: <TreePine className="w-5 h-5" /> },
+  { label: 'Fertilizers', href: '/owner/fertilizers', icon: <FlaskConical className="w-5 h-5" /> }, // ✅ New item
 ];
 
 export default function OwnerLayout({ children }) {
@@ -27,7 +29,8 @@ export default function OwnerLayout({ children }) {
   const isRootPage =
     pathname === '/owner/dashboard' ||
     pathname === '/owner/tree' ||
-    pathname === '/owner/analytics';
+    pathname === '/owner/analytics' ||
+    pathname === '/owner/fertilizers';
 
   return (
     <div className="bg-gray-950 text-white min-h-screen">
@@ -38,6 +41,8 @@ export default function OwnerLayout({ children }) {
         }`}
       >
         <h2 className="text-xl mt-11 font-bold text-green-400 mb-6">Owner Panel</h2>
+
+        {/* Main Nav */}
         <nav className="flex flex-col gap-2">
           {navItems.map((item) => (
             <Link
@@ -55,9 +60,27 @@ export default function OwnerLayout({ children }) {
             </Link>
           ))}
         </nav>
+
+        {/* Footer Nav */}
+        <div className="mt-auto pt-6 border-t border-gray-800 space-y-2">
+          <Link
+            href="/daily-update"
+            onClick={() => setIsOpen(false)}
+            className="block w-full text-center px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm font-medium transition"
+          >
+             Go to Farmer View
+          </Link>
+          <Link
+            href="/owner/manage-farmers"
+            onClick={() => setIsOpen(false)}
+            className="block w-full text-center px-3 py-2 rounded-lg bg-green-700 hover:bg-green-600 text-sm font-medium transition text-white"
+          >
+            Manage Farmers
+          </Link>
+        </div>
       </aside>
 
-      {/* Top-left toggle/back */}
+      {/* Mobile Toggle or Back */}
       <div
         className="md:hidden fixed z-50 p-2"
         style={{
@@ -82,7 +105,7 @@ export default function OwnerLayout({ children }) {
         )}
       </div>
 
-      {/* Mobile overlay */}
+      {/* Mobile Overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
@@ -90,7 +113,7 @@ export default function OwnerLayout({ children }) {
         />
       )}
 
-      {/* Main content */}
+      {/* Main Content */}
       <main className="ml-0 md:ml-64 pt-14 p-4 sm:p-6 min-h-screen overflow-x-hidden transition-all">
         {children}
       </main>
