@@ -36,9 +36,8 @@ export default function OwnerLayout({ children }) {
     <div className="bg-gray-950 text-white min-h-screen">
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-screen w-64 bg-gray-900 border-r border-gray-800 p-6 z-40 transition-transform duration-300 transform md:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-        }`}
+        className={`fixed top-0 left-0 h-screen w-64 bg-gray-900 border-r border-gray-800 p-6 z-40 transition-transform duration-300 transform md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          }`}
       >
         <h2 className="text-xl mt-11 font-bold text-green-400 mb-6">Owner Panel</h2>
 
@@ -49,11 +48,10 @@ export default function OwnerLayout({ children }) {
               key={item.href}
               href={item.href}
               onClick={() => setIsOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition ${
-                pathname.startsWith(item.href)
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition ${pathname.startsWith(item.href)
                   ? 'bg-green-700'
                   : 'hover:bg-gray-800 text-gray-300'
-              }`}
+                }`}
             >
               {item.icon}
               <span>{item.label}</span>
@@ -68,7 +66,7 @@ export default function OwnerLayout({ children }) {
             onClick={() => setIsOpen(false)}
             className="block w-full text-center px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm font-medium transition"
           >
-             Go to Farmer View
+            Go to Farmer View
           </Link>
           <Link
             href="/owner/manage-farmers"
@@ -78,7 +76,21 @@ export default function OwnerLayout({ children }) {
             Manage Farmers
           </Link>
         </div>
+
+        <div className='pt-6 border-t border-gray-800 space-y-2'>
+          <button
+          onClick={() => {
+            document.cookie = 'owner_token=; Max-Age=0; path=/';
+            location.href = '/owner-login';
+          }}
+         className="block  w-full text-center px-3 py-2 rounded-lg bg-red-500 hover:bg-red-800 text-sm font-medium transition text-white"
+        >
+          Logout
+        </button>
+        </div>
+
       </aside>
+
 
       {/* Mobile Toggle or Back */}
       <div
