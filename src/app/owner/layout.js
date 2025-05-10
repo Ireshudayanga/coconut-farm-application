@@ -62,7 +62,7 @@ export default function OwnerLayout({ children }) {
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <h2 className="text-xl font-bold text-green-400 mb-6">🌴 Owner Panel</h2>
+        <h2 className="text-xl mt-11 font-bold text-green-400 mb-6">Owner Panel</h2>
         <nav className="flex flex-col gap-2">
           {navItems.map((item) => (
             <Link
