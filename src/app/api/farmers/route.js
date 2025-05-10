@@ -13,7 +13,9 @@ export async function GET() {
         id: f._id.toString(),
         name: f.name,
         username: f.username,
-      })),
+        passwordHash: f.passwordHash, // 🔥 this line is required for login to work
+      }))
+
     });
   } catch (err) {
     console.error('GET farmers error:', err);

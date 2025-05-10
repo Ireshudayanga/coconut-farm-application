@@ -9,37 +9,42 @@ export default function FarmerLoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Auto-login from localStorage
-    const saved = localStorage.getItem('farmerAuth');
-    if (saved) {
-      document.cookie = `farmer_token=1; path=/`;
+    // If already logged in, redirect to dashboard
+    const isLoggedIn = document.cookie.includes('farmer_token=1');
+    if (isLoggedIn) {
       router.replace('/daily-update');
     }
-  }, []);
+  }, [router]);
 
   const handleLogin = async () => {
-    if (!username || !password) return;
+    if (!username || !password) {
+      alert('Please enter both username and password');
+      return;
+    }
 
-    const res = await fetch('/api/farmers');
-    const data = await res.json();
+    try {
+      const res = await fetch('/api/farmers');
+      const data = await res.json();
 
-    const match = data.farmers.find((f) => f.username === username);
+      const match = data.farmers.find((f) => f.username === username);
+      if (!match) return alert('User not found');
 
-    if (!match) return alert('User not found');
+      const check = await fetch('/api/farmer-login', {
+        method: 'POST',
+        body: JSON.stringify({ password, hash: match.passwordHash }),
+      });
 
-    const check = await fetch('/api/farmer-login', {
-      method: 'POST',
-      body: JSON.stringify({ password, hash: match.passwordHash }),
-    });
+      const valid = await check.json();
+      if (!valid.ok) return alert('Incorrect password');
 
-    const valid = await check.json();
-
-    if (!valid.ok) return alert('Wrong password');
-
-    // ✅ Save session
-    document.cookie = `farmer_token=1; path=/`;
-    localStorage.setItem('farmerAuth', JSON.stringify({ username }));
-    router.replace('/daily-update');
+      // ✅ Set cookie valid for 2 days
+      document.cookie = `farmer_token=1; max-age=172800; path=/`;
+      localStorage.setItem('farmerAuth', JSON.stringify({ username }));
+      router.replace('/farmer');
+    } catch (err) {
+      console.error('Login error:', err);
+      alert('Login failed. Try again.');
+    }
   };
 
   return (

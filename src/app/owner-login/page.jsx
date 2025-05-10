@@ -11,7 +11,7 @@ export default function OwnerLoginPage() {
 
   const handleLogin = () => {
     if (password === process.env.NEXT_PUBLIC_OWNER_PASSWORD) {
-      document.cookie = `owner_token=valid; path=/`;
+     document.cookie = `owner_token=valid; max-age=172800; path=/`;
       const redirect = searchParams.get('redirect') || '/owner/dashboard';
       router.replace(redirect);
     } else {
