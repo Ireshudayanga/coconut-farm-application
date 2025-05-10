@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -18,13 +18,35 @@ const navItems = [
   { label: 'Dashboard', href: '/owner/dashboard', icon: <Home className="w-5 h-5" /> },
   { label: 'Analytics', href: '/owner/analytics', icon: <BarChart className="w-5 h-5" /> },
   { label: 'All Trees', href: '/owner/tree', icon: <TreePine className="w-5 h-5" /> },
-  { label: 'Fertilizers', href: '/owner/fertilizers', icon: <FlaskConical className="w-5 h-5" /> }, // ✅ New item
+  { label: 'Fertilizers', href: '/owner/fertilizers', icon: <FlaskConical className="w-5 h-5" /> },
 ];
 
 export default function OwnerLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(null); // ✅ track auth status
+
+  useEffect(() => {
+    const isOwner = document.cookie.includes('owner_token=valid');
+    if (!isOwner) {
+      router.replace('/owner-login');
+      setIsAuthorized(false);
+    } else {
+      setIsAuthorized(true);
+    }
+  }, [router]);
+
+  // ✅ Prevent rendering until auth is determined
+  if (isAuthorized === null) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+        Checking access...
+      </div>
+    );
+  }
+
+  if (!isAuthorized) return null; // prevent flash
 
   const isRootPage =
     pathname === '/owner/dashboard' ||
@@ -41,7 +63,6 @@ export default function OwnerLayout({ children }) {
       >
         <h2 className="text-xl mt-11 font-bold text-green-400 mb-6">Owner Panel</h2>
 
-        {/* Main Nav */}
         <nav className="flex flex-col gap-2">
           {navItems.map((item) => (
             <Link
@@ -59,7 +80,6 @@ export default function OwnerLayout({ children }) {
           ))}
         </nav>
 
-        {/* Footer Nav */}
         <div className="mt-auto pt-6 border-t border-gray-800 space-y-2">
           <Link
             href="/farmer"
@@ -79,20 +99,18 @@ export default function OwnerLayout({ children }) {
 
         <div className='pt-6 border-t border-gray-800 space-y-2'>
           <button
-          onClick={() => {
-            document.cookie = 'owner_token=; Max-Age=0; path=/';
-            location.href = '/owner-login';
-          }}
-         className="block  w-full text-center px-3 py-2 rounded-lg bg-red-500 hover:bg-red-800 text-sm font-medium transition text-white"
-        >
-          Logout
-        </button>
+            onClick={() => {
+              document.cookie = 'owner_token=; Max-Age=0; path=/';
+              location.href = '/owner-login';
+            }}
+            className="block w-full text-center px-3 py-2 rounded-lg bg-red-500 hover:bg-red-800 text-sm font-medium transition text-white"
+          >
+            Logout
+          </button>
         </div>
-
       </aside>
 
-
-      {/* Mobile Toggle or Back */}
+      {/* Mobile Nav Toggle */}
       <div
         className="md:hidden fixed z-50 p-2"
         style={{
@@ -117,7 +135,6 @@ export default function OwnerLayout({ children }) {
         )}
       </div>
 
-      {/* Mobile Overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
@@ -125,7 +142,7 @@ export default function OwnerLayout({ children }) {
         />
       )}
 
-      {/* Main Content */}
+      {/* Main */}
       <main className="ml-0 md:ml-64 pt-14 p-4 sm:p-6 min-h-screen overflow-x-hidden transition-all">
         {children}
       </main>

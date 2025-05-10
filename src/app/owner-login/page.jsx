@@ -1,8 +1,8 @@
-// src/app/owner-login/page.jsx
 'use client';
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Home } from 'lucide-react';
 
 export default function OwnerLoginPage() {
   const [password, setPassword] = useState('');
@@ -11,7 +11,7 @@ export default function OwnerLoginPage() {
 
   const handleLogin = () => {
     if (password === process.env.NEXT_PUBLIC_OWNER_PASSWORD) {
-     document.cookie = `owner_token=valid; max-age=172800; path=/`;
+      document.cookie = `owner_token=valid; max-age=172800; path=/`;
       const redirect = searchParams.get('redirect') || '/owner/dashboard';
       router.replace(redirect);
     } else {
@@ -20,7 +20,16 @@ export default function OwnerLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-6 space-y-4">
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-6 space-y-4 relative">
+      {/* Home button */}
+      <button
+        onClick={() => router.push('/')}
+        className="absolute top-4 left-4 text-gray-400 hover:text-white transition"
+        title="Back to Home"
+      >
+        <Home className="w-6 h-6" />
+      </button>
+
       <h1 className="text-2xl font-bold text-green-400">Owner Login</h1>
       <input
         type="password"

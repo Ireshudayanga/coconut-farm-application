@@ -7,6 +7,12 @@ import { Menu, X } from 'lucide-react';
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
+  const handleLogout = () => {
+    document.cookie = 'farmer_token=; Max-Age=0; path=/';
+    localStorage.removeItem('farmerAuth');
+    location.href = '/login-choice';
+  };
+
   return (
     <nav className="bg-gray-950 text-white sticky top-0 z-50 shadow border-b border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
@@ -32,12 +38,14 @@ const Navbar = () => {
           >
             Daily Update
           </Link>
-          <Link
-            href="/generate-qr"
-            className="hover:text-green-300 transition"
+        
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="text-red-400 hover:text-red-600 transition"
           >
-            Generate QR
-          </Link>
+            Logout
+          </button>
 
           {/* Owner Login CTA */}
           <Link
@@ -74,6 +82,15 @@ const Navbar = () => {
           >
             Daily Update
           </Link>
+        
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="block text-left  text-red-400 hover:text-red-600 transition"
+          >
+            Logout
+          </button>
+
           <Link
             href="/owner/dashboard"
             onClick={() => setIsOpen(false)}
