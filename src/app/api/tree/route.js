@@ -52,3 +52,27 @@ export async function GET(req) {
     return NextResponse.json({ error: 'Failed to check tree' }, { status: 500 });
   }
 }
+
+// Add at the bottom of route.js
+export async function DELETE(req) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const treeId = searchParams.get('id');
+
+    if (!treeId) {
+      return NextResponse.json({ error: 'Missing tree ID' }, { status: 400 });
+    }
+
+    const db = (await clientPromise).db();
+    const result = await db.collection('trees').deleteOne({ id: treeId });
+
+    if (result.deletedCount === 0) {
+      return NextResponse.json({ ok: false, message: 'Tree not found' });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error('Delete error:', err);
+    return NextResponse.json({ error: 'Failed to delete tree' }, { status: 500 });
+  }
+}

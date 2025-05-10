@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { TreePine, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { TreePine, ArrowLeft, Trash2 } from 'lucide-react';
+
+
+
 
 export default function AllTreesPage() {
   const [treeList, setTreeList] = useState([]);
@@ -36,7 +39,9 @@ export default function AllTreesPage() {
 
       {/* Tree Cards */}
       {loading ? (
-        <p className="text-gray-500">Loading trees...</p>
+        <div className="flex justify-center items-center py-10">
+          <div className="w-6 h-6 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
+        </div>
       ) : treeList.length === 0 ? (
         <p className="text-gray-500">No trees found.</p>
       ) : (
@@ -45,16 +50,50 @@ export default function AllTreesPage() {
             <Link
               key={tree.id}
               href={`/owner/tree/${tree.id}`}
-              className="group block bg-gray-900 border border-gray-800 rounded-xl p-4 shadow hover:shadow-lg hover:border-green-600 transition duration-200"
+              className="relative group block bg-gray-900 border border-gray-800 rounded-xl p-4 shadow hover:shadow-lg hover:border-green-600 transition duration-200"
             >
+              {/* Delete button */}
+              <button
+                onClick={async (e) => {
+                  e.preventDefault(); // prevent Link navigation
+                  const confirm = window.confirm(`Delete ${tree.id}?`);
+                  if (!confirm) return;
+
+                  try {
+                    const res = await fetch(`/api/tree?id=${tree.id}`, {
+                      method: 'DELETE',
+                    });
+                    const data = await res.json();
+
+                    if (data.ok) {
+                      alert(`Tree ${tree.id} deleted successfully`);
+                      setTreeList((prev) => prev.filter((t) => t.id !== tree.id));
+                    } else {
+                      alert(data.message || 'Failed to delete tree');
+                    }
+                  } catch (err) {
+                    console.error('Delete failed', err);
+                    alert('Delete error');
+                  }
+                }}
+                className="absolute top-2 right-2 text-red-400 hover:text-red-600 z-10"
+                title="Delete Tree"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+
+              {/* Tree icon */}
               <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-700 mb-3 mx-auto">
                 <TreePine className="w-5 h-5 text-white" />
               </div>
+
+              {/* Tree ID */}
               <h2 className="text-lg font-semibold text-center text-white group-hover:text-green-400">
                 {tree.id}
               </h2>
               <p className="text-xs text-gray-500 text-center mt-1">View history</p>
             </Link>
+
           ))}
         </div>
       )}
