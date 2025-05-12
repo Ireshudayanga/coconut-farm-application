@@ -1,52 +1,94 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { QRCodeCanvas } from 'qrcode.react';
-import html2canvas from 'html2canvas';
+import QRCode from 'qrcode';
 
 export default function FarmerPage() {
   const [newTreeId, setNewTreeId] = useState('');
   const [existingTreeId, setExistingTreeId] = useState('');
   const [generatedQR, setGeneratedQR] = useState('');
   const [lastTreeNumber, setLastTreeNumber] = useState(0);
-  const qrRef = useRef(null);
+  const [svgDataUrl, setSvgDataUrl] = useState('');
 
-  const handleDownloadQR = async () => {
-    if (!qrRef.current) return;
+  useEffect(() => {
+    const fetchLastTree = async () => {
+      try {
+        const res = await fetch('/api/tree/last');
+        const data = await res.json();
+        setLastTreeNumber(data.lastNumber);
+      } catch (err) {
+        console.error('Failed to fetch last tree number', err);
+      }
+    };
+    fetchLastTree();
+  }, []);
 
-    const canvas = await html2canvas(qrRef.current, {
-      backgroundColor: '#ffffff',
-    });
+  const generateSvgQr = async (treeId) => {
+    try {
+      const rawSvg = await QRCode.toString(treeId, {
+        type: 'svg',
+        errorCorrectionLevel: 'H',
+      });
 
-    const dataUrl = canvas.toDataURL('image/png');
+      const qrContent = rawSvg
+        .replace(/^.*?<svg[^>]*?>/s, '')
+        .replace(/<\/svg>.*$/s, '');
+
+      const finalSvg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400">
+          <style>
+            .label { font: bold 18px sans-serif; fill: black; text-anchor: middle; }
+          </style>
+          <text x="150" y="40" class="label">🌿 Coconut Tree Tag</text>
+          <g transform="translate(0,45) scale(10.8)">
+            ${qrContent}
+          </g>
+          <text x="150" y="380" class="label">${treeId}</text>
+        </svg>
+      `;
+
+      const blob = new Blob([finalSvg], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      setSvgDataUrl(url);
+    } catch (err) {
+      console.error('QR generation failed:', err);
+      alert('QR generation failed.');
+    }
+  };
+
+  const handleSvgDownload = () => {
+    if (!svgDataUrl || !generatedQR) return;
     const link = document.createElement('a');
-    link.href = dataUrl;
-    link.download = `${generatedQR}_qr_with_text.png`;
+    link.href = svgDataUrl;
+    link.download = `${generatedQR}.svg`;
     link.click();
   };
 
-  // define at top of component
-const fetchLastTree = async () => {
-  try {
-    const res = await fetch('/api/tree/last');
-    const data = await res.json();
-    setLastTreeNumber(data.lastNumber);
-  } catch (err) {
-    console.error('Failed to fetch last tree number', err);
-  }
-};
-
-useEffect(() => {
-  fetchLastTree();
-}, []);
-
+  const handlePngDownload = () => {
+    if (!svgDataUrl || !generatedQR) return;
+    const img = new Image();
+    img.src = svgDataUrl;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 300;
+      canvas.height = 400;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const pngUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = pngUrl;
+      link.download = `${generatedQR}.png`;
+      link.click();
+    };
+  };
 
   return (
     <div className="min-h-screen w-full max-w-full bg-gray-950 text-white px-4 sm:px-6 py-10 overflow-x-hidden">
       <div className="max-w-6xl mx-auto space-y-12">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -57,9 +99,7 @@ useEffect(() => {
           <p className="text-gray-400 text-base sm:text-lg">Manage your trees with ease</p>
         </motion.div>
 
-        {/* Action Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Scan QR */}
           <motion.div
             whileHover={{ scale: 1.01 }}
             className="bg-gray-900 border border-gray-700 p-6 rounded-xl shadow-md flex flex-col"
@@ -76,7 +116,6 @@ useEffect(() => {
             </Link>
           </motion.div>
 
-          {/* Daily Update */}
           <motion.div
             whileHover={{ scale: 1.01 }}
             className="bg-gray-900 border border-gray-700 p-6 rounded-xl shadow-md flex flex-col"
@@ -94,7 +133,6 @@ useEffect(() => {
           </motion.div>
         </div>
 
-        {/* Generate QR for New Tree */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -124,9 +162,7 @@ useEffect(() => {
               onClick={async () => {
                 if (!newTreeId.trim()) return;
                 const fullTreeId = `TREE-${newTreeId.padStart(3, '0')}`;
-                const confirm = window.confirm(`Create new tree with ID "${fullTreeId}"?`);
-
-                if (!confirm) return;
+                if (!window.confirm(`Create new tree with ID "${fullTreeId}"?`)) return;
 
                 const formData = new FormData();
                 formData.append('treeId', fullTreeId);
@@ -141,7 +177,6 @@ useEffect(() => {
                     method: 'POST',
                     body: formData,
                   });
-
                   const result = await res.json();
 
                   if (result.ok) {
@@ -149,6 +184,7 @@ useEffect(() => {
                     fetchLastTree();
                     setNewTreeId('');
                     setGeneratedQR(fullTreeId);
+                    generateSvgQr(fullTreeId);
                   } else {
                     alert('Failed to upload new tree entry.');
                   }
@@ -164,7 +200,6 @@ useEffect(() => {
           </div>
         </motion.div>
 
-        {/* Regenerate QR for Existing Tree */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -186,13 +221,13 @@ useEffect(() => {
             <button
               onClick={async () => {
                 if (!existingTreeId.trim()) return;
-
                 const fullId = `TREE-${existingTreeId.padStart(3, '0')}`;
                 const res = await fetch(`/api/tree?id=${fullId}`);
                 const data = await res.json();
 
                 if (data.exists) {
                   setGeneratedQR(fullId);
+                  generateSvgQr(fullId);
                 } else {
                   alert('Tree ID not found in database.');
                 }
@@ -204,35 +239,32 @@ useEffect(() => {
           </div>
         </motion.div>
 
-        {/* QR Output */}
-        {generatedQR && (
+        {/* QR Preview & Downloads */}
+        {svgDataUrl && generatedQR && (
           <div className="flex flex-col items-center justify-center mt-10 space-y-6">
             <p className="text-white text-lg">
               QR Code for Tree ID: <span className="text-green-400 font-semibold">{generatedQR}</span>
             </p>
-            <div
-              ref={qrRef}
-              style={{
-                backgroundColor: '#ffffff',
-                padding: '24px',
-                borderRadius: '12px',
-                border: '1px solid #ccc',
-                textAlign: 'center',
-                color: '#000',
-                fontFamily: 'sans-serif',
-              }}
-            >
-              <QRCodeCanvas value={generatedQR} size={200} />
-              <p style={{ marginTop: '10px', fontWeight: 'bold', fontSize: '14px' }}>
-                {generatedQR}
-              </p>
+
+            <div className="bg-white p-4 rounded shadow border w-fit text-black text-center">
+              <img src={svgDataUrl} alt="Tree QR Code" width={300} height={400} />
             </div>
-            <button
-              onClick={handleDownloadQR}
-              className="bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700 transition font-medium"
-            >
-              Download QR Code
-            </button>
+
+            <div className="flex gap-4">
+              <button
+                onClick={handleSvgDownload}
+                className="bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700 transition font-medium"
+              >
+                Download SVG
+              </button>
+
+              <button
+                onClick={handlePngDownload}
+                className="bg-amber-600 text-white px-5 py-2 rounded-md hover:bg-amber-700 transition font-medium"
+              >
+                Download PNG
+              </button>
+            </div>
           </div>
         )}
       </div>

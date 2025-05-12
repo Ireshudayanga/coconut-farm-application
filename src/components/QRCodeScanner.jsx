@@ -1,50 +1,113 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { useState } from 'react';
+import {
+  Scanner,
+  useDevices,
+  outline,
+  boundingBox,
+  centerText,
+} from '@yudiel/react-qr-scanner';
 import { useRouter } from 'next/navigation';
 
-export default function QRCodeScanner() {
-  const hasScanned = useRef(false);
-  const html5QrCodeRef = useRef(null);
+export default function ScannerPage() {
   const router = useRouter();
+  const [deviceId, setDeviceId] = useState(undefined);
+  const [tracker, setTracker] = useState('centerText');
+  const [pause, setPause] = useState(false);
+  const devices = useDevices();
 
-  useEffect(() => {
-    let isMounted = true;
-    const startScanner = async () => {
-      try {
-        html5QrCodeRef.current = new Html5Qrcode('reader');
+  const getTracker = () => {
+    switch (tracker) {
+      case 'outline':
+        return outline;
+      case 'boundingBox':
+        return boundingBox;
+      case 'centerText':
+        return centerText;
+      default:
+        return undefined;
+    }
+  };
 
-        await html5QrCodeRef.current.start(
-          { facingMode: 'environment' },
-          { fps: 10, qrbox: 250 },
-          (decodedText) => {
-            if (!hasScanned.current) {
-              hasScanned.current = true;
-              html5QrCodeRef.current.stop().catch(() => {});
-              router.push(`/tree/${decodedText}`);
-            }
-          },
-          (error) => {
-            // console.log('Scan error', error);
-          }
-        );
-      } catch (err) {
-        console.error('Scanner init failed:', err);
+  const handleScan = async (data) => {
+    setPause(true);
+    try {
+      const response = await fetch(`/api/tree?id=${encodeURIComponent(data)}`);
+      const result = await response.json();
+
+      if (response.ok && result.exists) {
+        router.push(`/tree/${data}`);
+      } else {
+        alert('❌ Tree ID not found in the database.');
       }
-    };
+    } catch (error) {
+      console.error('Scan error:', error);
+      alert('Error checking tree ID.');
+    } finally {
+      setPause(false);
+    }
+  };
 
-    setTimeout(() => {
-      if (isMounted) startScanner();
-    }, 300);
+  return (
+    <div className="min-h-screen bg-gray-950 text-white px-4 py-10 sm:px-6">
+      <div className="max-w-xl mx-auto space-y-6">
+       
 
-    return () => {
-      isMounted = false;
-      if (html5QrCodeRef.current) {
-        html5QrCodeRef.current.stop().catch(() => {});
-      }
-    };
-  }, [router]);
+        {/* Controls */}
+        <div className="flex flex-wrap gap-4 justify-center">
+          <select
+            value={deviceId}
+            onChange={(e) => setDeviceId(e.target.value)}
+            className="bg-gray-800 text-white p-2 rounded"
+          >
+            <option value="">Select Camera</option>
+            {devices.map((device, index) => (
+              <option key={index} value={device.deviceId}>
+                {device.label}
+              </option>
+            ))}
+          </select>
 
-  return <div id="reader" className="w-full h-[300px] rounded-lg shadow-md" />;
+          <select
+            value={tracker}
+            onChange={(e) => setTracker(e.target.value)}
+            className="bg-gray-800 text-white p-2 rounded"
+          >
+            <option value="centerText">Center Text</option>
+            <option value="outline">Outline</option>
+            <option value="boundingBox">Bounding Box</option>
+            <option value="">No Tracker</option>
+          </select>
+        </div>
+
+        {/* Scanner */}
+        <div className="flex justify-center">
+          <Scanner
+            formats={['qr_code']}
+            constraints={{ deviceId }}
+            onScan={(codes) => codes[0] && handleScan(codes[0].rawValue)}
+            onError={(err) => console.error('Scanner error:', err)}
+            styles={{ container: { height: '420px', width: '360px' } }}
+            components={{
+              audio: true,
+              onOff: true,
+              torch: true,
+              zoom: true,
+              finder: true,
+              tracker: getTracker(),
+            }}
+            allowMultiple={false}
+            scanDelay={2000}
+            paused={pause}
+          />
+        </div>
+
+        {/* Tip */}
+        <p className="text-sm text-center text-gray-500">
+          Ensure good lighting and camera focus for better scanning.
+        </p>
+      </div>
+    </div>
+  );
 }
