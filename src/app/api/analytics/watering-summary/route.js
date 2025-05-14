@@ -1,11 +1,15 @@
+
 import clientPromise from '@/lib/mongo';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(req) {
   try {
     const db = (await clientPromise).db();
+    const { searchParams } = new URL(req.url);
+    const treeId = searchParams.get('treeId');
 
     const pipeline = [
+      ...(treeId ? [{ $match: { treeId } }] : []),
       {
         $group: {
           _id: '$watered',
