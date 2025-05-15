@@ -1,29 +1,32 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Home } from 'lucide-react';
 
 export default function OwnerLoginPage() {
   const [password, setPassword] = useState('');
+  const [redirectTo, setRedirectTo] = useState('/owner/dashboard');
   const router = useRouter();
-  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const redirect = searchParams.get('redirect');
+    if (redirect) setRedirectTo(redirect);
+  }, []);
 
   const handleLogin = async () => {
     try {
       const res = await fetch('/api/owner-login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),
       });
 
       const data = await res.json();
       if (data.ok) {
         document.cookie = `owner_token=valid; max-age=172800; path=/`;
-        const redirect = searchParams.get('redirect') || '/owner/dashboard';
-        router.replace(redirect);
+        router.replace(redirectTo);
       } else {
         alert('Invalid password');
       }
