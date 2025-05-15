@@ -9,13 +9,27 @@ export default function OwnerLoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const handleLogin = () => {
-    if (password === process.env.NEXT_PUBLIC_OWNER_PASSWORD) {
-      document.cookie = `owner_token=valid; max-age=172800; path=/`;
-      const redirect = searchParams.get('redirect') || '/owner/dashboard';
-      router.replace(redirect);
-    } else {
-      alert('Invalid password');
+  const handleLogin = async () => {
+    try {
+      const res = await fetch('/api/owner-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      const data = await res.json();
+      if (data.ok) {
+        document.cookie = `owner_token=valid; max-age=172800; path=/`;
+        const redirect = searchParams.get('redirect') || '/owner/dashboard';
+        router.replace(redirect);
+      } else {
+        alert('Invalid password');
+      }
+    } catch (err) {
+      console.error('Login failed', err);
+      alert('Error logging in.');
     }
   };
 
