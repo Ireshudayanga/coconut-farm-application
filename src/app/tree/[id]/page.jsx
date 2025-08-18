@@ -67,7 +67,7 @@ export default function TreeUpdatePage() {
           className="text-center"
         >
           <h1 className="text-3xl sm:text-4xl font-bold text-green-400">
-            🌴 Tree Update
+            🌴 Tree Updates
           </h1>
           <p className="text-gray-400 text-sm sm:text-base mt-2">
             Tree ID: <span className="text-white font-semibold">{treeId}</span>
