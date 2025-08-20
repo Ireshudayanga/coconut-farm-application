@@ -58,7 +58,7 @@ const Footer = () => {
 
       {/* Mobile Centered Tech Tag */}
       <div className="mt-4 text-center sm:hidden text-xs text-gray-500">
-        Built with ❤️ Next.js
+        Built with 🌿 Next.js
       </div>
     </footer>
   );
