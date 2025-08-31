@@ -11,6 +11,7 @@ import {
   X,
   ArrowLeft,
   FlaskConical,
+  Bug,
 } from 'lucide-react';
 import '@/app/globals.css';
 
@@ -19,6 +20,7 @@ const navItems = [
   { label: 'Analytics', href: '/owner/analytics', icon: <BarChart className="w-5 h-5" /> },
   { label: 'All Trees', href: '/owner/tree', icon: <TreePine className="w-5 h-5" /> },
   { label: 'Fertilizers', href: '/owner/fertilizers', icon: <FlaskConical className="w-5 h-5" /> },
+  { label: 'Pests', href: '/owner/pests', icon: <Bug className="w-5 h-5" /> },
 ];
 
 export default function OwnerLayout({ children }) {
@@ -52,7 +54,8 @@ export default function OwnerLayout({ children }) {
     pathname === '/owner/dashboard' ||
     pathname === '/owner/tree' ||
     pathname === '/owner/analytics' ||
-    pathname === '/owner/fertilizers';
+    pathname === '/owner/fertilizers'
+    pathname === '/owner/pests';
 
   return (
     <div className="bg-gray-950 text-white min-h-screen">
