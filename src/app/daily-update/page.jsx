@@ -108,25 +108,6 @@ export default function DailyUpdateDashboard() {
               className="w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-3 py-2"
             />
           </div>
-
-
-          {/* Flags */}
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Filter by Flags</label>
-            <div className="flex flex-wrap gap-2">
-              {flagOptions.map((flagNum) => (
-                <button
-                  key={flagNum}
-                  type="button"
-                  onClick={() => toggleFlag(flagNum)}
-                  className={`px-3 py-2 rounded-full text-xl ${activeFlags.includes(flagNum) ? 'bg-blue-600' : 'bg-gray-700'
-                    }`}
-                >
-                  {flagMap[flagNum]}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Updates List */}
