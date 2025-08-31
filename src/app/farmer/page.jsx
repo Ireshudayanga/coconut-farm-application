@@ -3,17 +3,24 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import {
-  QrCode,
-  ClipboardList,
-  ChevronRight,
-  Camera,
-  FileEdit,
-} from "lucide-react";
+import { QrCode, ClipboardList, ChevronRight } from "lucide-react";
 import { useEffect } from "react";
 
+// lock body scroll while this page is active (prevents background scroll on mobile)
+function useLockBodyScroll(lock = true) {
+  useEffect(() => {
+    if (!lock) return;
+    const { style } = document.body;
+    const prev = style.overflow;
+    style.overflow = "hidden";
+    return () => {
+      style.overflow = prev;
+    };
+  }, [lock]);
+}
+
 export default function FarmerPage() {
-  // optional: lock viewport height for mobile browsers to reduce jump
+  // keep your smooth scroll behavior
   useEffect(() => {
     document.documentElement.style.scrollBehavior = "smooth";
     return () => {
@@ -21,8 +28,11 @@ export default function FarmerPage() {
     };
   }, []);
 
+  // 🔒 lock body scroll for this fullscreen view
+  useLockBodyScroll(true);
+
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-[100dvh] bg-gray-950 text-white overscroll-none">
       {/* Header */}
       <header className="px-4 pt-6 pb-3 sm:px-6">
         <motion.h1
@@ -32,19 +42,17 @@ export default function FarmerPage() {
         >
           Farmer Dashboard
         </motion.h1>
-        <p className="text-gray-400 text-sm mt-1">
-          Quick actions for daily work
-        </p>
+        <p className="text-gray-400 text-sm mt-1">Quick actions for daily work</p>
       </header>
 
-      {/* Primary actions (mobile-first, big tap targets) */}
+      {/* Primary actions */}
       <main className="px-4 sm:px-6 space-y-4 pb-28">
-        {/* Scan QR */}
+        {/* Scan QR (fullscreen panel) */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="fixed inset-0 z-40 flex flex-col justify-center items-center bg-gray-900 text-center p-6"
+          className="fixed inset-0 z-40 flex flex-col justify-center items-center bg-gray-900 text-center p-6 h-[100dvh]"
         >
           <div className="flex flex-col items-center space-y-6 max-w-sm w-full">
             {/* Icon */}
@@ -56,8 +64,7 @@ export default function FarmerPage() {
             <div>
               <h2 className="text-2xl font-bold mb-2">Scan Tree QR</h2>
               <p className="text-gray-400 text-base">
-                Point your phone at the tree tag to open the update form
-                instantly.
+                Point your phone at the tree tag to open the update form instantly.
               </p>
             </div>
 
@@ -67,12 +74,13 @@ export default function FarmerPage() {
               className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition"
             >
               Start Scanning
+              <ChevronRight className="w-5 h-5" />
             </Link>
           </div>
         </motion.div>
       </main>
 
-      {/* Sticky bottom action bar (thumb-reachable) */}
+      {/* Sticky bottom action bar (kept as-is) */}
       <nav className="fixed inset-x-0 bottom-0 z-50 bg-gray-900/95 border-t border-gray-800 backdrop-blur supports-[backdrop-filter]:bg-gray-900/70">
         <div className="mx-auto max-w-3xl px-4 py-3">
           <div className="grid grid-cols-2 gap-3">
