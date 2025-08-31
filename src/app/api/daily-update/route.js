@@ -1,3 +1,4 @@
+// src/app/api/daily-update/route.js
 import { NextResponse } from 'next/server';
 import cloudinary from '@/lib/cloudinary';
 import clientPromise from '@/lib/mongo';
@@ -10,10 +11,7 @@ export async function POST(req) {
     const treeId = formData.get('treeId');
     const watered = formData.get('watered') === 'true';
     const date = formData.get('date');
-    const pestNotes = formData.get('pestNotes') || '';
-    const notes = formData.get('notes') || '';
     const fertilizers = JSON.parse(formData.get('fertilizers') || '[]');
-    const flags = JSON.parse(formData.get('flags') || '[]');
     const image = formData.get('image');
 
     let imageUrl = null;
@@ -22,16 +20,12 @@ export async function POST(req) {
       const buffer = Buffer.from(await image.arrayBuffer());
 
       const uploadResult = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          {
-            folder: 'tree-updates',
-            upload_preset: 'treeFarm',
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        ).end(buffer);
+        cloudinary.uploader
+          .upload_stream(
+            { folder: 'tree-updates', upload_preset: 'treeFarm' },
+            (error, result) => (error ? reject(error) : resolve(result))
+          )
+          .end(buffer);
       });
 
       imageUrl = uploadResult.secure_url;
@@ -42,12 +36,9 @@ export async function POST(req) {
       treeId,
       watered,
       fertilizers,
-      date,
-      pestNotes,
-      notes,
-      flags,
+      date,            // YYYY-MM-DD string as you already use
       imageUrl,
-      createdAt: new Date(),
+      createdAt: new Date(), // tie-breaker for same-day multiple updates
     });
 
     return NextResponse.json({ ok: true });
@@ -57,17 +48,19 @@ export async function POST(req) {
   }
 }
 
+// GET: List updates (optionally by treeId) with newest-first ordering
 export async function GET(req) {
   try {
     const db = (await clientPromise).db();
     const { searchParams } = new URL(req.url);
     const treeId = searchParams.get('treeId');
 
-    const query = treeId ? { treeId } : {}; // ✅ filter if provided
+    const query = treeId ? { treeId } : {};
 
-    const updates = await db.collection('updates')
+    const updates = await db
+      .collection('updates')
       .find(query)
-      .sort({ date: -1 })
+      .sort({ date: -1, createdAt: -1 }) // 👈 newest day first, then newest time within that day
       .limit(100)
       .toArray();
 
@@ -76,8 +69,7 @@ export async function GET(req) {
         treeId: u.treeId,
         watered: u.watered,
         date: u.date,
-        flags: u.flags || [],
-        notes: u.notes || '',
+        createdAt: u.createdAt,           // 👈 expose to client (for UI tie-break if needed)
         imageUrl: u.imageUrl || null,
         fertilizers: u.fertilizers || [],
       })),
@@ -87,4 +79,3 @@ export async function GET(req) {
     return NextResponse.json({ ok: false, error: 'Failed to fetch updates' }, { status: 500 });
   }
 }
-

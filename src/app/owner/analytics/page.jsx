@@ -105,28 +105,7 @@ export default function AnalyticsPage() {
           )}
         </div>
 
-        {/* Flag Breakdown */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-          <h2 className="text-lg font-semibold mb-3 text-white">Flag Breakdown</h2>
-          {loadingFlags ? (
-            <Spinner />
-          ) : flagBreakdown.length === 0 ? (
-            <p className="text-gray-500 text-sm">No flag data available.</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={flagBreakdown}>
-                <XAxis dataKey="name" stroke="#ccc" />
-                <YAxis stroke="#ccc" />
-                <Tooltip />
-                <Bar dataKey="value">
-                  {flagBreakdown.map((entry, index) => (
-                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
+      
       </div>
     </div>
   );

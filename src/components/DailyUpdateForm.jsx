@@ -5,15 +5,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ImageUploader from './ImageUploader'; // updated icon-only version below
 
-/**
- * DailyUpdateForm — modified to your new spec:
- * - Date (read-only) ✅
- * - Watered? (yes/no) ✅
- * - Pest/Disease (dropdown from DB via /api/pests). Optional (no validation) ✅
- * - General Notes removed (we still send empty string to keep backend happy) ✅
- * - Status Flags: only “Pests observed” remains + info button ✅
- * - Image upload uses icon button instead of plain file input ✅
- */
 export default function DailyUpdateForm({ treeId }) {
   if (!treeId || typeof treeId !== 'string') {
     return (
@@ -74,13 +65,6 @@ export default function DailyUpdateForm({ treeId }) {
 
       // pestNotes carries dropdown selection (or empty if none selected)
       formData.append('pestNotes', selectedPest || '');
-
-      // we removed general notes UI -> always send empty string (API expects field)
-      formData.append('notes', '');
-
-      // only one flag possible: 1 = 🐛 pests
-      const flags = pestsObserved ? [1] : [];
-      formData.append('flags', JSON.stringify(flags));
 
       if (imageFile) formData.append('image', imageFile);
 
@@ -182,43 +166,6 @@ export default function DailyUpdateForm({ treeId }) {
         </p>
       </div>
 
-      {/* Status Flag (only “Pests observed”) with info button */}
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className="text-gray-300">Status Flag</label>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setShowTooltip((s) => !s)}
-              className="text-sm text-gray-400 hover:text-white transition"
-              aria-label="Info about pest observation"
-            >
-              ⓘ
-            </button>
-            {showTooltip && (
-              <div className="absolute z-10 top-6 right-0 w-72 bg-gray-900 text-gray-200 text-xs p-3 rounded-lg shadow-lg border border-gray-700">
-                <p className="mb-1">🐛 — Tick if you observed pests or pest damage.</p>
-                <p>
-                  Combine with the dropdown above to select the specific pest/disease when known.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setPestsObserved((v) => !v)}
-            className={`px-3 py-2 rounded-full text-xl ${
-              pestsObserved ? 'bg-blue-600' : 'bg-gray-700'
-            }`}
-            aria-pressed={pestsObserved}
-          >
-            🐛
-          </button>
-        </div>
-      </div>
 
       {/* Image upload — icon-only trigger */}
       <div>

@@ -1,8 +1,10 @@
+// src/app/owner/dashboard/page.jsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
+// still used for read-only display on the cards
 const flagMap = {
   0: '🌴',
   1: '🐛',
@@ -10,20 +12,15 @@ const flagMap = {
   3: '🌧️',
 };
 
-const flagOptions = [0, 1, 2, 3];
-
 export default function OwnerDashboard() {
   const [updates, setUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters
-  const [searchId, setSearchId] = useState('');
+  // Filters (only these four now)
+  const [searchNumber, setSearchNumber] = useState(''); // numeric part after TREE-
   const [wateredFilter, setWateredFilter] = useState('');
-  const [activeFlags, setActiveFlags] = useState([]);
   const [dateFilter, setDateFilter] = useState('');
   const [fertilizerFilter, setFertilizerFilter] = useState('');
-  const [showTooltip, setShowTooltip] = useState(false);
-
 
   useEffect(() => {
     const fetchUpdates = async () => {
@@ -41,37 +38,25 @@ export default function OwnerDashboard() {
     fetchUpdates();
   }, []);
 
-  const toggleFlag = (flag) => {
-    setActiveFlags((prev) =>
-      prev.includes(flag) ? prev.filter((f) => f !== flag) : [...prev, flag]
-    );
-  };
-
   const filteredUpdates = updates.filter((item) => {
+    // Tree ID: user types only digits; we match against "TREE-<digits>"
     const matchesId =
-      searchId === '' ||
-      item.treeId.toLowerCase().includes(searchId.toLowerCase());
+      searchNumber === '' ||
+      item.treeId.toLowerCase().includes(`tree-${searchNumber}`.toLowerCase());
 
     const matchesWater =
       wateredFilter === '' || item.watered === (wateredFilter === 'yes');
-
-    const matchesFlags =
-      activeFlags.length === 0 ||
-      activeFlags.every((flag) => item.flags?.includes(flag));
 
     const matchesDate = dateFilter === '' || item.date === dateFilter;
 
     const matchesFertilizer =
       fertilizerFilter === '' ||
-      item.fertilizers?.includes(fertilizerFilter);
+      (Array.isArray(item.fertilizers) &&
+        item.fertilizers.some((f) =>
+          f.toLowerCase().includes(fertilizerFilter.toLowerCase())
+        ));
 
-    return (
-      matchesId &&
-      matchesWater &&
-      matchesFlags &&
-      matchesDate &&
-      matchesFertilizer
-    );
+    return matchesId && matchesWater && matchesDate && matchesFertilizer;
   });
 
   return (
@@ -82,17 +67,33 @@ export default function OwnerDashboard() {
       {/* Filters */}
       <div className="bg-gray-900 border border-gray-800 p-4 rounded-xl space-y-4">
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {/* Tree ID with fixed prefix */}
           <div>
             <label className="block text-sm text-gray-400 mb-1">Tree ID</label>
-            <input
-              type="text"
-              value={searchId}
-              onChange={(e) => setSearchId(e.target.value)}
-              placeholder="Search by Tree ID"
-              className="w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-3 py-2"
-            />
+            <div className="flex items-center bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+              <span className="px-3 py-2 text-gray-400 bg-gray-900 border-r border-gray-700">
+                TREE-
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={searchNumber}
+                onChange={(e) => {
+                  // keep only digits
+                  const digits = e.target.value.replace(/\D/g, '');
+                  setSearchNumber(digits);
+                }}
+                placeholder="Enter number"
+                className="flex-1 bg-transparent text-white px-3 py-2 outline-none"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Type only the number part (e.g., 12 → matches TREE-012, TREE-12, etc.)
+            </p>
           </div>
 
+          {/* Watered? */}
           <div>
             <label className="block text-sm text-gray-400 mb-1">Watered?</label>
             <select
@@ -106,6 +107,7 @@ export default function OwnerDashboard() {
             </select>
           </div>
 
+          {/* Date */}
           <div>
             <label className="block text-sm text-gray-400 mb-1">Date</label>
             <input
@@ -116,10 +118,9 @@ export default function OwnerDashboard() {
             />
           </div>
 
+          {/* Fertilizer */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1">
-              Fertilizer
-            </label>
+            <label className="block text-sm text-gray-400 mb-1">Fertilizer</label>
             <input
               type="text"
               value={fertilizerFilter}
@@ -129,45 +130,6 @@ export default function OwnerDashboard() {
             />
           </div>
         </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-sm text-gray-400">Filter by Flags</label>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowTooltip((prev) => !prev)}
-                className="text-sm text-gray-400 hover:text-white transition"
-              >
-                ⓘ
-              </button>
-
-              {showTooltip && (
-                <div className="absolute z-10 top-6 right-0 w-64 bg-gray-900 text-gray-200 text-xs p-3 rounded-lg shadow-lg border border-gray-700">
-                  <p>🌴 — Healthy condition</p>
-                  <p>🐛 — Pests observed</p>
-                  <p>⚠️ — Needs attention</p>
-                  <p>🌧️ — Affected by rain</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {flagOptions.map((flagNum) => (
-              <button
-                key={flagNum}
-                type="button"
-                onClick={() => toggleFlag(flagNum)}
-                className={`px-3 py-2 rounded-full text-xl ${activeFlags.includes(flagNum) ? 'bg-blue-600' : 'bg-gray-700'
-                  }`}
-              >
-                {flagMap[flagNum]}
-              </button>
-            ))}
-          </div>
-        </div>
-
       </div>
 
       {/* Content */}
@@ -194,13 +156,15 @@ export default function OwnerDashboard() {
 
               <div className="flex items-center gap-2 text-sm">
                 <span
-                  className={`px-2 py-1 rounded text-xs font-semibold ${update.watered ? 'bg-green-700' : 'bg-red-700'
-                    }`}
+                  className={`px-2 py-1 rounded text-xs font-semibold ${
+                    update.watered ? 'bg-green-700' : 'bg-red-700'
+                  }`}
                 >
                   {update.watered ? 'Watered' : 'Not Watered'}
                 </span>
 
-                {update.flags?.length > 0 ? (
+                {/* read-only flags display retained */}
+                {Array.isArray(update.flags) && update.flags.length > 0 ? (
                   update.flags.map((flag, i) => (
                     <span key={i} className="text-xl">
                       {flagMap[flag]}

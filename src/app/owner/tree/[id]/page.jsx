@@ -13,7 +13,7 @@ import {
   Bar,
   ResponsiveContainer,
 } from 'recharts';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 
 const COLORS = ['#22c55e', '#ef4444', '#facc15', '#3b82f6'];
@@ -150,12 +150,29 @@ function TreeActivity({ treeId }) {
   const [activity, setActivity] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // NEW: simple lightbox state for full image viewing
+  const [lightboxUrl, setLightboxUrl] = useState(null);
+  const openLightbox = useCallback((url) => setLightboxUrl(url), []);
+  const closeLightbox = useCallback(() => setLightboxUrl(null), []);
+
   useEffect(() => {
     if (!treeId) return;
 
     fetch(`/api/daily-update?treeId=${treeId}`)
       .then((res) => res.json())
-      .then((data) => setActivity(data.updates || []))
+      .then((data) => {
+        const items = Array.isArray(data.updates) ? data.updates : [];
+
+        // ✅ Ensure "recent first" on the client too
+        // Your API already sorts by date desc, but we enforce here as well.
+        items.sort((a, b) => {
+          const da = new Date(a.date);
+          const db = new Date(b.date);
+          return db - da; // newest first
+        });
+
+        setActivity(items);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [treeId]);
@@ -169,50 +186,100 @@ function TreeActivity({ treeId }) {
   }
 
   return (
-    <div className="space-y-4">
-      {activity.map((update, index) => (
-        <div
-          key={`${update.date}-${index}`}
-          className="bg-gray-900 border border-gray-800 p-4 rounded-xl space-y-2 shadow"
-        >
-          <div className="flex justify-between items-center">
-            <span className="text-green-400 font-semibold">{update.treeId}</span>
-            <span className="text-sm text-gray-500">{update.date}</span>
-          </div>
+    <>
+      <div className="space-y-4">
+        {activity.map((update, index) => (
+          <div
+            key={`${update.date}-${index}`}
+            className="bg-gray-900 border border-gray-800 p-4 rounded-xl space-y-2 shadow"
+          >
+            <div className="flex justify-between items-center">
+              <span className="text-green-400 font-semibold">{update.treeId}</span>
+              <span className="text-sm text-gray-500">{update.date}</span>
+            </div>
 
-          <div className="flex gap-2 text-sm">
-            <span
-              className={`px-2 py-1 rounded text-xs ${
-                update.watered ? 'bg-green-700' : 'bg-red-700'
-              }`}
-            >
-              {update.watered ? 'Watered' : 'Not Watered'}
-            </span>
+            <div className="flex gap-2 text-sm">
+              <span
+                className={`px-2 py-1 rounded text-xs ${
+                  update.watered ? 'bg-green-700' : 'bg-red-700'
+                }`}
+              >
+                {update.watered ? 'Watered' : 'Not Watered'}
+              </span>
 
-            {update.flags?.length > 0 ? (
-              update.flags.map((flag, i) => (
-                <span key={i} className="text-xl">
-                  {['🌴', '🐛', '⚠️', '🌧️'][flag]}
-                </span>
-              ))
-            ) : (
-              <span className="text-xs text-gray-500 italic">No flags</span>
+              {update.flags?.length > 0 ? (
+                update.flags.map((flag, i) => (
+                  <span key={i} className="text-xl">
+                    {['🌴', '🐛', '⚠️', '🌧️'][flag]}
+                  </span>
+                ))
+              ) : (
+                <span className="text-xs text-gray-500 italic">No flags</span>
+              )}
+            </div>
+
+            {update.notes && <p className="text-gray-300 text-sm">{update.notes}</p>}
+
+            {update.imageUrl && (
+              <div className="space-y-2">
+                {/* Thumbnail that opens the lightbox */}
+                <img
+                  src={update.imageUrl}
+                  alt="tree"
+                  className="w-full h-40 object-cover rounded-lg border border-gray-700 cursor-zoom-in"
+                  onClick={() => openLightbox(update.imageUrl)}
+                />
+                {/* Also provide an explicit button for owners */}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => openLightbox(update.imageUrl)}
+                    className="px-3 py-1 rounded bg-gray-800 border border-gray-700 text-sm hover:bg-gray-700"
+                  >
+                    View full image
+                  </button>
+                  <a
+                    href={update.imageUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-1 rounded bg-gray-800 border border-gray-700 text-sm hover:bg-gray-700"
+                  >
+                    Open in new tab
+                  </a>
+                </div>
+              </div>
             )}
           </div>
+        ))}
+      </div>
 
-          {update.notes && (
-            <p className="text-gray-300 text-sm">{update.notes}</p>
-          )}
-
-          {update.imageUrl && (
+      {/* Simple lightbox modal */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={closeLightbox}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="relative max-w-5xl w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={closeLightbox}
+              className="absolute -top-10 right-0 text-gray-200 bg-gray-800 border border-gray-700 px-3 py-1 rounded hover:bg-gray-700"
+            >
+              Close
+            </button>
             <img
-              src={update.imageUrl}
-              alt="tree"
-              className="w-full h-40 object-cover rounded-lg border border-gray-700"
+              src={lightboxUrl}
+              alt="Full view"
+              className="w-full h-auto rounded-lg border border-gray-700"
             />
-          )}
+          </div>
         </div>
-      ))}
-    </div>
+      )}
+    </>
   );
 }
