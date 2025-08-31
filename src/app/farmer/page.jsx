@@ -1,140 +1,100 @@
-'use client';
+// src/app/farmer/page.jsx
+"use client";
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import Link from 'next/link';
-import QRCode from 'qrcode';
+import { motion } from "framer-motion";
+import Link from "next/link";
+import {
+  QrCode,
+  ClipboardList,
+  ChevronRight,
+  Camera,
+  FileEdit,
+} from "lucide-react";
+import { useEffect } from "react";
 
 export default function FarmerPage() {
-  const [newTreeId, setNewTreeId] = useState('');
-  const [existingTreeId, setExistingTreeId] = useState('');
-  const [generatedQR, setGeneratedQR] = useState('');
-  const [lastTreeNumber, setLastTreeNumber] = useState(0);
-  const [svgDataUrl, setSvgDataUrl] = useState('');
-
+  // optional: lock viewport height for mobile browsers to reduce jump
   useEffect(() => {
-    const fetchLastTree = async () => {
-      try {
-        const res = await fetch('/api/tree/last');
-        const data = await res.json();
-        setLastTreeNumber(data.lastNumber);
-      } catch (err) {
-        console.error('Failed to fetch last tree number', err);
-      }
+    document.documentElement.style.scrollBehavior = "smooth";
+    return () => {
+      document.documentElement.style.scrollBehavior = "";
     };
-    fetchLastTree();
   }, []);
 
-  const generateSvgQr = async (treeId) => {
-    try {
-      const rawSvg = await QRCode.toString(treeId, {
-        type: 'svg',
-        errorCorrectionLevel: 'H',
-      });
-
-      const qrContent = rawSvg
-        .replace(/^.*?<svg[^>]*?>/s, '')
-        .replace(/<\/svg>.*$/s, '');
-
-      const finalSvg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400">
-          <style>
-            .label { font: bold 18px sans-serif; fill: black; text-anchor: middle; }
-          </style>
-          <text x="150" y="40" class="label">🌿 Coconut Tree Tag</text>
-          <g transform="translate(0,45) scale(10.8)">
-            ${qrContent}
-          </g>
-          <text x="150" y="380" class="label">${treeId}</text>
-        </svg>
-      `;
-
-      const blob = new Blob([finalSvg], { type: 'image/svg+xml' });
-      const url = URL.createObjectURL(blob);
-      setSvgDataUrl(url);
-    } catch (err) {
-      console.error('QR generation failed:', err);
-      alert('QR generation failed.');
-    }
-  };
-
-  const handleSvgDownload = () => {
-    if (!svgDataUrl || !generatedQR) return;
-    const link = document.createElement('a');
-    link.href = svgDataUrl;
-    link.download = `${generatedQR}.svg`;
-    link.click();
-  };
-
-  const handlePngDownload = () => {
-    if (!svgDataUrl || !generatedQR) return;
-    const img = new Image();
-    img.src = svgDataUrl;
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 300;
-      canvas.height = 400;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const pngUrl = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.href = pngUrl;
-      link.download = `${generatedQR}.png`;
-      link.click();
-    };
-  };
-
   return (
-    <div className="min-h-screen w-full max-w-full bg-gray-950 text-white px-4 sm:px-6 py-10 overflow-x-hidden">
-      <div className="max-w-6xl mx-auto space-y-12">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
+    <div className="min-h-screen bg-gray-950 text-white">
+      {/* Header */}
+      <header className="px-4 pt-6 pb-3 sm:px-6">
+        <motion.h1
+          initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center"
+          className="text-2xl font-bold tracking-tight"
         >
-          <h1 className="text-4xl font-bold sm:text-5xl mb-2">Farmer Dashboard</h1>
-          <p className="text-gray-400 text-base sm:text-lg">Manage your trees with ease</p>
-        </motion.div>
+          Farmer Dashboard
+        </motion.h1>
+        <p className="text-gray-400 text-sm mt-1">
+          Quick actions for daily work
+        </p>
+      </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <motion.div
-            whileHover={{ scale: 1.01 }}
-            className="bg-gray-900 border border-gray-700 p-6 rounded-xl shadow-md flex flex-col"
-          >
-            <h2 className="text-xl font-semibold mb-4">Scan Tree QR</h2>
-            <p className="text-gray-400 text-sm mb-6">
-              Use your mobile camera to scan the QR code on a tree and submit updates quickly.
-            </p>
+      {/* Primary actions (mobile-first, big tap targets) */}
+      <main className="px-4 sm:px-6 space-y-4 pb-28">
+        {/* Scan QR */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="fixed inset-0 z-40 flex flex-col justify-center items-center bg-gray-900 text-center p-6"
+        >
+          <div className="flex flex-col items-center space-y-6 max-w-sm w-full">
+            {/* Icon */}
+            <div className="flex items-center justify-center w-20 h-20 rounded-2xl bg-green-600/20 text-green-400">
+              <QrCode className="w-12 h-12" aria-hidden="true" />
+            </div>
+
+            {/* Title + description */}
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Scan Tree QR</h2>
+              <p className="text-gray-400 text-base">
+                Point your phone at the tree tag to open the update form
+                instantly.
+              </p>
+            </div>
+
+            {/* Action button */}
             <Link
               href="/qr-scan"
-              className="mt-auto bg-green-600 text-white text-center py-2 rounded-lg hover:bg-green-700 transition font-semibold block"
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition"
             >
               Start Scanning
             </Link>
-          </motion.div>
+          </div>
+        </motion.div>
+      </main>
 
-          <motion.div
-            whileHover={{ scale: 1.01 }}
-            className="bg-gray-900 border border-gray-700 p-6 rounded-xl shadow-md flex flex-col"
-          >
-            <h2 className="text-xl font-semibold mb-4">Daily Update Form</h2>
-            <p className="text-gray-400 text-sm mb-6">
-              Enter daily details like watering status, medicine, and pest/disease notes manually.
-            </p>
+      {/* Sticky bottom action bar (thumb-reachable) */}
+      <nav className="fixed inset-x-0 bottom-0 z-50 bg-gray-900/95 border-t border-gray-800 backdrop-blur supports-[backdrop-filter]:bg-gray-900/70">
+        <div className="mx-auto max-w-3xl px-4 py-3">
+          <div className="grid grid-cols-2 gap-3">
+            <Link
+              href="/qr-scan"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 hover:bg-green-700 px-4 py-3 text-sm font-semibold"
+            >
+              <QrCode className="w-5 h-5" />
+              Scan QR
+            </Link>
             <Link
               href="/daily-update"
-              className="mt-auto bg-yellow-500 text-white text-center py-2 rounded-lg hover:bg-yellow-600 transition font-semibold block"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 px-4 py-3 text-sm font-semibold"
             >
+              <ClipboardList className="w-5 h-5" />
               Fill Form
             </Link>
-          </motion.div>
+          </div>
+          {/* iOS safe-area padding */}
+          <div className="pt-[env(safe-area-inset-bottom)]" />
         </div>
-
-      
-      </div>
+      </nav>
     </div>
   );
 }
