@@ -1,15 +1,15 @@
 // src/app/owner/dashboard/page.jsx
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
 // still used for read-only display on the cards
 const flagMap = {
-  0: '🌴',
-  1: '🐛',
-  2: '⚠️',
-  3: '🌧️',
+  0: "🌴",
+  1: "🐛",
+  2: "⚠️",
+  3: "🌧️",
 };
 
 export default function OwnerDashboard() {
@@ -17,19 +17,19 @@ export default function OwnerDashboard() {
   const [loading, setLoading] = useState(true);
 
   // Filters (only these four now)
-  const [searchNumber, setSearchNumber] = useState(''); // numeric part after TREE-
-  const [wateredFilter, setWateredFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
-  const [fertilizerFilter, setFertilizerFilter] = useState('');
+  const [searchNumber, setSearchNumber] = useState(""); // numeric part after TREE-
+  const [wateredFilter, setWateredFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [fertilizerFilter, setFertilizerFilter] = useState("");
 
   useEffect(() => {
     const fetchUpdates = async () => {
       try {
-        const res = await fetch('/api/daily-update');
+        const res = await fetch("/api/daily-update");
         const data = await res.json();
         setUpdates(data.updates || []);
       } catch (err) {
-        console.error('Failed to fetch updates:', err);
+        console.error("Failed to fetch updates:", err);
       } finally {
         setLoading(false);
       }
@@ -38,19 +38,27 @@ export default function OwnerDashboard() {
     fetchUpdates();
   }, []);
 
+  // 1) Add a small formatter near the top (below imports)
+  const fmtLocalTime = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    // e.g. "10:42" or "10:42 AM" depending on user locale
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
   const filteredUpdates = updates.filter((item) => {
     // Tree ID: user types only digits; we match against "TREE-<digits>"
     const matchesId =
-      searchNumber === '' ||
+      searchNumber === "" ||
       item.treeId.toLowerCase().includes(`tree-${searchNumber}`.toLowerCase());
 
     const matchesWater =
-      wateredFilter === '' || item.watered === (wateredFilter === 'yes');
+      wateredFilter === "" || item.watered === (wateredFilter === "yes");
 
-    const matchesDate = dateFilter === '' || item.date === dateFilter;
+    const matchesDate = dateFilter === "" || item.date === dateFilter;
 
     const matchesFertilizer =
-      fertilizerFilter === '' ||
+      fertilizerFilter === "" ||
       (Array.isArray(item.fertilizers) &&
         item.fertilizers.some((f) =>
           f.toLowerCase().includes(fertilizerFilter.toLowerCase())
@@ -81,7 +89,7 @@ export default function OwnerDashboard() {
                 value={searchNumber}
                 onChange={(e) => {
                   // keep only digits
-                  const digits = e.target.value.replace(/\D/g, '');
+                  const digits = e.target.value.replace(/\D/g, "");
                   setSearchNumber(digits);
                 }}
                 placeholder="Enter number"
@@ -89,7 +97,8 @@ export default function OwnerDashboard() {
               />
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Type only the number part (e.g., 12 → matches TREE-012, TREE-12, etc.)
+              Type only the number part (e.g., 12 → matches TREE-012, TREE-12,
+              etc.)
             </p>
           </div>
 
@@ -120,7 +129,9 @@ export default function OwnerDashboard() {
 
           {/* Fertilizer */}
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Fertilizer</label>
+            <label className="block text-sm text-gray-400 mb-1">
+              Fertilizer
+            </label>
             <input
               type="text"
               value={fertilizerFilter}
@@ -151,16 +162,23 @@ export default function OwnerDashboard() {
                 <span className="text-green-400 font-semibold">
                   {update.treeId}
                 </span>
-                <span className="text-xs text-gray-500">{update.date}</span>
+
+                {/* Date + local time */}
+                <span className="text-xs text-gray-500">
+                  {update.date}
+                  {update.createdAt
+                    ? ` · ${fmtLocalTime(update.createdAt)}`
+                    : ""}
+                </span>
               </div>
 
               <div className="flex items-center gap-2 text-sm">
                 <span
                   className={`px-2 py-1 rounded text-xs font-semibold ${
-                    update.watered ? 'bg-green-700' : 'bg-red-700'
+                    update.watered ? "bg-green-700" : "bg-red-700"
                   }`}
                 >
-                  {update.watered ? 'Watered' : 'Not Watered'}
+                  {update.watered ? "Watered" : "Not Watered"}
                 </span>
 
                 {/* read-only flags display retained */}

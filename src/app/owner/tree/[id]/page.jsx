@@ -1,3 +1,4 @@
+// src/app/owner/tree/[id]/page.jsx
 'use client';
 
 import {
@@ -13,10 +14,17 @@ import {
   Bar,
   ResponsiveContainer,
 } from 'recharts';
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 
 const COLORS = ['#22c55e', '#ef4444', '#facc15', '#3b82f6'];
+
+// format an ISO timestamp as local time "HH:MM"
+const fmtLocalTime = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
 
 export default function TreeAnalyticsPage() {
   const { id: treeId } = useParams();
@@ -110,29 +118,6 @@ export default function TreeAnalyticsPage() {
             </ResponsiveContainer>
           )}
         </div>
-
-        {/* Flag Breakdown */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-          <h2 className="text-lg font-semibold mb-3 text-white">Flag Breakdown</h2>
-          {loadingFlags ? (
-            <Spinner />
-          ) : flagBreakdown.length === 0 ? (
-            <p className="text-gray-500 text-sm">No flag data available.</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={flagBreakdown}>
-                <XAxis dataKey="name" stroke="#ccc" />
-                <YAxis stroke="#ccc" />
-                <Tooltip />
-                <Bar dataKey="value">
-                  {flagBreakdown.map((entry, index) => (
-                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
       </div>
 
       {/* Tree Activity Feed */}
@@ -150,7 +135,7 @@ function TreeActivity({ treeId }) {
   const [activity, setActivity] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // NEW: simple lightbox state for full image viewing
+  // simple lightbox state for full image viewing
   const [lightboxUrl, setLightboxUrl] = useState(null);
   const openLightbox = useCallback((url) => setLightboxUrl(url), []);
   const closeLightbox = useCallback(() => setLightboxUrl(null), []);
@@ -163,12 +148,11 @@ function TreeActivity({ treeId }) {
       .then((data) => {
         const items = Array.isArray(data.updates) ? data.updates : [];
 
-        // ✅ Ensure "recent first" on the client too
-        // Your API already sorts by date desc, but we enforce here as well.
+        // Sort newest-first using the exact timestamp when available
         items.sort((a, b) => {
-          const da = new Date(a.date);
-          const db = new Date(b.date);
-          return db - da; // newest first
+          const ta = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.date).getTime();
+          const tb = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.date).getTime();
+          return tb - ta; // newest first
         });
 
         setActivity(items);
@@ -195,7 +179,11 @@ function TreeActivity({ treeId }) {
           >
             <div className="flex justify-between items-center">
               <span className="text-green-400 font-semibold">{update.treeId}</span>
-              <span className="text-sm text-gray-500">{update.date}</span>
+              {/* show Date · Local Time (time from createdAt) */}
+              <span className="text-sm text-gray-500">
+                {update.date}
+                {update.createdAt ? ` · ${fmtLocalTime(update.createdAt)}` : ''}
+              </span>
             </div>
 
             <div className="flex gap-2 text-sm">
@@ -229,7 +217,7 @@ function TreeActivity({ treeId }) {
                   className="w-full h-40 object-cover rounded-lg border border-gray-700 cursor-zoom-in"
                   onClick={() => openLightbox(update.imageUrl)}
                 />
-                {/* Also provide an explicit button for owners */}
+                {/* Explicit buttons */}
                 <div className="flex gap-3">
                   <button
                     type="button"
