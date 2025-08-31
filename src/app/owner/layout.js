@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   FlaskConical,
   Bug,
+  DatabaseBackup,
 } from 'lucide-react';
 import '@/app/globals.css';
 import { QrCode } from 'lucide-react';
@@ -24,6 +25,7 @@ const navItems = [
   { label: 'Fertilizers', href: '/owner/fertilizers', icon: <FlaskConical className="w-5 h-5" /> },
   { label: 'Pests', href: '/owner/pests', icon: <Bug className="w-5 h-5" /> },
   { label: 'QR Codes', href: '/owner/qr', icon: <QrCode className="w-5 h-5" /> },
+  { label: 'Backup', href: '/owner/backup', icon: <DatabaseBackup className="w-5 h-5" /> },
 ];
 
 export default function OwnerLayout({ children }) {
@@ -59,7 +61,8 @@ export default function OwnerLayout({ children }) {
     pathname === '/owner/analytics' ||
     pathname === '/owner/fertilizers' ||
     pathname === '/owner/pests' ||
-    pathname === '/owner/qr';
+    pathname === '/owner/qr' ||
+    pathname === '/owner/backup';
 
   return (
     <div className="bg-gray-950 text-white min-h-screen">
