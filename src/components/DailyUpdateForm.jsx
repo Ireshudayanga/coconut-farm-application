@@ -1,11 +1,19 @@
+// src/components/DailyUpdateForm.jsx
 'use client';
 
-import { useState } from 'react';
-import ImageUploader from './ImageUploader';
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import ImageUploader from './ImageUploader'; // updated icon-only version below
 
-
+/**
+ * DailyUpdateForm — modified to your new spec:
+ * - Date (read-only) ✅
+ * - Watered? (yes/no) ✅
+ * - Pest/Disease (dropdown from DB via /api/pests). Optional (no validation) ✅
+ * - General Notes removed (we still send empty string to keep backend happy) ✅
+ * - Status Flags: only “Pests observed” remains + info button ✅
+ * - Image upload uses icon button instead of plain file input ✅
+ */
 export default function DailyUpdateForm({ treeId }) {
   if (!treeId || typeof treeId !== 'string') {
     return (
@@ -15,86 +23,86 @@ export default function DailyUpdateForm({ treeId }) {
     );
   }
 
+  // core state
   const [watered, setWatered] = useState(null);
-  const [fertilizers, setFertilizers] = useState([]);
-  const [pestNotes, setPestNotes] = useState('');
-  const [notes, setNotes] = useState('');
-  const [flags, setFlags] = useState([]);
+  const [fertilizers, setFertilizers] = useState([]); // unchanged
+  const [availableFertilizers, setAvailableFertilizers] = useState([]);
+  const [pestList, setPestList] = useState([]);  // fetched from /api/pests
+  const [selectedPest, setSelectedPest] = useState(''); // dropdown selection (optional)
+  const [pestsObserved, setPestsObserved] = useState(false); // one and only status flag
   const [imageFile, setImageFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [availableFertilizers, setAvailableFertilizers] = useState([]);
-  const [showTooltip, setShowTooltip] = useState(false); // For mobile tooltip
-  const router = useRouter();
+  const [showTooltip, setShowTooltip] = useState(false); // info bubble
 
+  const router = useRouter();
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+  // 1) load fertilizers (unchanged from your repo)
   useEffect(() => {
     fetch('/api/fertilizers')
-      .then(res => res.json())
-      .then(data => setAvailableFertilizers(data.fertilizers))
+      .then((res) => res.json())
+      .then((data) => setAvailableFertilizers(data?.fertilizers ?? []))
       .catch(console.error);
   }, []);
 
+  // 2) load pest options for dropdown (NEW)
+  useEffect(() => {
+    fetch('/api/pests')
+      .then((res) => res.json())
+      .then((data) => setPestList(data?.pests ?? []))
+      .catch(console.error);
+  }, []);
 
-  const today = new Date().toISOString().split('T')[0];
-  const flagOptions = [0, 1, 2, 3];
-
-  const flagMap = {
-    0: '🌴',
-    1: '🐛',
-    2: '⚠️',
-    3: '🌧️',
-  };
-
-
-  const toggleFlag = (flagNum) => {
-    setFlags((prev) =>
-      prev.includes(flagNum) ? prev.filter((f) => f !== flagNum) : [...prev, flagNum]
+  // helper to toggle fertilizer chips
+  const toggleFertilizer = (value) => {
+    setFertilizers((prev) =>
+      prev.includes(value) ? prev.filter((f) => f !== value) : [...prev, value]
     );
   };
 
-  const resetForm = () => {
-    setWatered(null);
-    setFertilizers([]);
-    setPestNotes('');
-    setNotes('');
-    setFlags([]);
-    setImageFile(null);
-    setSubmitting(false);
-    setShowTooltip(false);
-  };
-
+  // submit handler — mirrors your existing /api/daily-update contract
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
 
-    const formData = new FormData();
-    formData.append('treeId', treeId);
-    formData.append('date', today);
-    formData.append('watered', watered);
-    formData.append('fertilizers', JSON.stringify(fertilizers));
-    formData.append('pestNotes', pestNotes);
-    formData.append('notes', notes);
-    formData.append('flags', JSON.stringify(flags));
-    if (imageFile) {
-      formData.append('image', imageFile);
-    }
-
     try {
-      const res = await fetch('/api/daily-update', {
-        method: 'POST',
-        body: formData,
-      });
+      const formData = new FormData();
+      formData.append('treeId', treeId);
+      formData.append('date', today);
+      formData.append('watered', watered);
+      formData.append('fertilizers', JSON.stringify(fertilizers));
+
+      // pestNotes carries dropdown selection (or empty if none selected)
+      formData.append('pestNotes', selectedPest || '');
+
+      // we removed general notes UI -> always send empty string (API expects field)
+      formData.append('notes', '');
+
+      // only one flag possible: 1 = 🐛 pests
+      const flags = pestsObserved ? [1] : [];
+      formData.append('flags', JSON.stringify(flags));
+
+      if (imageFile) formData.append('image', imageFile);
+
+      const res = await fetch('/api/daily-update', { method: 'POST', body: formData });
 
       if (res.ok) {
         alert('Tree update submitted!');
-        resetForm();
+        // reset minimal state
+        setWatered(null);
+        setFertilizers([]);
+        setSelectedPest('');
+        setPestsObserved(false);
+        setImageFile(null);
+        setSubmitting(false);
         router.push('/farmer');
       } else {
         alert('❌ Failed to submit. Try again.');
+        setSubmitting(false);
       }
     } catch (err) {
       console.error(err);
       alert('❌ Error submitting form');
-    } finally {
       setSubmitting(false);
     }
   };
@@ -103,7 +111,7 @@ export default function DailyUpdateForm({ treeId }) {
     <form onSubmit={handleSubmit} className="space-y-5 text-sm">
       <input type="hidden" name="treeId" value={treeId} />
 
-      {/* Date */}
+      {/* Date (read-only) */}
       <div>
         <label className="block mb-1 text-gray-300">Date</label>
         <input
@@ -114,128 +122,113 @@ export default function DailyUpdateForm({ treeId }) {
         />
       </div>
 
-      {/* Watered */}
+      {/* Watered? (unchanged UI) */}
       <div>
         <label className="block mb-1 text-gray-300">Watered?</label>
-        <div className="flex space-x-4">
+        <div className="flex gap-3">
           <button
             type="button"
             onClick={() => setWatered(true)}
-            className={`px-4 py-2 rounded-lg ${watered ? 'bg-green-600' : 'bg-gray-700'
-              }`}
+            className={`px-4 py-2 rounded-lg ${watered ? 'bg-green-600' : 'bg-gray-700'}`}
           >
             Yes
           </button>
           <button
             type="button"
             onClick={() => setWatered(false)}
-            className={`px-4 py-2 rounded-lg ${watered === false ? 'bg-red-600' : 'bg-gray-700'
-              }`}
+            className={`px-4 py-2 rounded-lg ${watered === false ? 'bg-red-600' : 'bg-gray-700'}`}
           >
             No
           </button>
         </div>
       </div>
 
-      {/* Fertilizers */}
+      {/* Fertilizers (chips, unchanged logic) */}
       <div>
         <label className="block mb-1 text-gray-300">Fertilizers</label>
-        <div>
-          <div className="flex flex-wrap gap-3">
-            {availableFertilizers.map((fertilizer) => (
-              <label
-                key={fertilizer}
-                className="flex items-center space-x-2 text-white text-sm"
-              >
-                <input
-                  type="checkbox"
-                  value={fertilizer}
-                  checked={fertilizers.includes(fertilizer)}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setFertilizers((prev) =>
-                      prev.includes(value)
-                        ? prev.filter((f) => f !== value)
-                        : [...prev, value]
-                    );
-                  }}
-                  className="accent-green-500"
-                />
-                <span>{fertilizer}</span>
-              </label>
-            ))}
-          </div>
+        <div className="flex flex-wrap gap-3">
+          {availableFertilizers.map((f) => (
+            <label key={f} className="flex items-center gap-2 text-white">
+              <input
+                type="checkbox"
+                value={f}
+                checked={fertilizers.includes(f)}
+                onChange={() => toggleFertilizer(f)}
+                className="accent-green-500"
+              />
+              <span>{f}</span>
+            </label>
+          ))}
         </div>
       </div>
 
-      {/* Pest Notes */}
+      {/* Pest/Disease (dropdown from DB) — optional */}
       <div>
-        <label className="block mb-1 text-gray-300">Pest / Disease Notes</label>
-        <input
-          type="text"
-          value={pestNotes}
-          onChange={(e) => setPestNotes(e.target.value)}
-          placeholder="Describe pests or symptoms"
+        <label className="block mb-1 text-gray-300">Pest / Disease</label>
+        <select
+          value={selectedPest}
+          onChange={(e) => setSelectedPest(e.target.value)}
           className="w-full bg-gray-800 text-white border border-gray-600 rounded-lg px-3 py-2"
-        />
+        >
+          <option value="">None</option>
+          {pestList.map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-gray-500 mt-1">
+          This field is optional. Leave blank if nothing observed.
+        </p>
       </div>
 
-      {/* General Notes */}
-      <div>
-        <label className="block mb-1 text-gray-300">General Notes</label>
-        <textarea
-          rows={3}
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="w-full bg-gray-800 text-white border border-gray-600 rounded-lg px-3 py-2"
-        />
-      </div>
-
-      {/* Status Flags with tooltip */}
+      {/* Status Flag (only “Pests observed”) with info button */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className="text-gray-300">Status Flags</label>
-
+          <label className="text-gray-300">Status Flag</label>
           <div className="relative">
             <button
               type="button"
-              onClick={() => setShowTooltip(!showTooltip)}
-              className="text-sm text-gray-400 hover:text-white transition focus:outline-none"
+              onClick={() => setShowTooltip((s) => !s)}
+              className="text-sm text-gray-400 hover:text-white transition"
+              aria-label="Info about pest observation"
             >
               ⓘ
             </button>
-
             {showTooltip && (
-              <div className="absolute z-10 top-6 right-0 w-64 bg-gray-900 text-gray-200 text-xs p-3 rounded-lg shadow-lg border border-gray-700">
-                <p>🌴 — Healthy condition</p>
-                <p>🐛 — Pests observed</p>
-                <p>⚠️ — Needs attention</p>
-                <p>🌧️ — Affected by rain</p>
+              <div className="absolute z-10 top-6 right-0 w-72 bg-gray-900 text-gray-200 text-xs p-3 rounded-lg shadow-lg border border-gray-700">
+                <p className="mb-1">🐛 — Tick if you observed pests or pest damage.</p>
+                <p>
+                  Combine with the dropdown above to select the specific pest/disease when known.
+                </p>
               </div>
             )}
           </div>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {flagOptions.map((flagNum) => (
-            <button
-              key={flagNum}
-              type="button"
-              onClick={() => toggleFlag(flagNum)}
-              className={`px-3 py-2 rounded-full text-xl ${flags.includes(flagNum) ? 'bg-blue-600' : 'bg-gray-700'
-                }`}
-            >
-              {flagMap[flagNum]}
-            </button>
-          ))}
-
+          <button
+            type="button"
+            onClick={() => setPestsObserved((v) => !v)}
+            className={`px-3 py-2 rounded-full text-xl ${
+              pestsObserved ? 'bg-blue-600' : 'bg-gray-700'
+            }`}
+            aria-pressed={pestsObserved}
+          >
+            🐛
+          </button>
         </div>
       </div>
 
-      {/* Image Upload */}
+      {/* Image upload — icon-only trigger */}
       <div>
         <label className="block mb-1 text-gray-300">Upload Image</label>
         <ImageUploader onImageSelect={setImageFile} />
+        {imageFile && (
+          <p className="text-xs text-gray-500 mt-2">
+            Selected: <span className="text-gray-300">{imageFile.name}</span>
+          </p>
+        )}
       </div>
 
       {/* Submit */}
