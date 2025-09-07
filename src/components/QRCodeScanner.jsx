@@ -50,16 +50,14 @@ export default function ScannerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white px-4 py-10 sm:px-6">
+    <div className="min-h-screen bg-white text-gray-900 px-4 py-10 sm:px-6">
       <div className="max-w-xl mx-auto space-y-6">
-       
-
         {/* Controls */}
         <div className="flex flex-wrap gap-4 justify-center">
           <select
             value={deviceId}
             onChange={(e) => setDeviceId(e.target.value)}
-            className="bg-gray-800 text-white p-2 rounded"
+            className="bg-white text-gray-900 p-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
           >
             <option value="">Select Camera</option>
             {devices.map((device, index) => (
@@ -72,7 +70,7 @@ export default function ScannerPage() {
           <select
             value={tracker}
             onChange={(e) => setTracker(e.target.value)}
-            className="bg-gray-800 text-white p-2 rounded"
+            className="bg-white text-gray-900 p-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
           >
             <option value="centerText">Center Text</option>
             <option value="outline">Outline</option>
@@ -104,7 +102,7 @@ export default function ScannerPage() {
         </div>
 
         {/* Tip */}
-        <p className="text-sm text-center text-gray-500">
+        <p className="text-sm text-center text-gray-600">
           Ensure good lighting and camera focus for better scanning.
         </p>
       </div>

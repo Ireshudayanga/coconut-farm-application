@@ -19,7 +19,7 @@ export default function ImageUploader({ onImageSelect }) {
         accept="image/*"
         ref={fileInputRef}
         onChange={handleFileChange}
-        className="text-white"
+        className="text-gray-900"
       />
     </div>
   );
