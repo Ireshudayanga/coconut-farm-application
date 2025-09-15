@@ -38,7 +38,7 @@ export default function FarmerPage() {
         >
           Farmer Dashboard
         </motion.h1>
-        <p className="text-gray-600 text-sm mt-1">Quick actions for daily work</p>
+        <p className="text-gray-600 text-sm mt-1">Quick actions for daily task</p>
       </header>
 
       {/* Primary actions */}
