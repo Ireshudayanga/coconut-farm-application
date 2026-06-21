@@ -13,3 +13,18 @@ services:
     command: npm run dev
     env_file:
       - .env.local
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/coconut_farm
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:

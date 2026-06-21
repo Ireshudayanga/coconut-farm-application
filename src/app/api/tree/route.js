@@ -64,6 +64,11 @@ export async function DELETE(req) {
     }
 
     const db = (await clientPromise).db();
+    
+    // First, delete all updates associated with the tree ID
+    await db.collection('updates').deleteMany({ treeId: treeId });
+
+    // Then, delete the tree itself
     const result = await db.collection('trees').deleteOne({ id: treeId });
 
     if (result.deletedCount === 0) {

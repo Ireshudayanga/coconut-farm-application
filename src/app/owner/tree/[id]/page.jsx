@@ -31,10 +31,8 @@ export default function TreeAnalyticsPage() {
 
   const [updatesPerDay, setUpdatesPerDay] = useState([]);
   const [wateringSummary, setWateringSummary] = useState([]);
-  const [flagBreakdown, setFlagBreakdown] = useState([]);
   const [loadingUpdates, setLoadingUpdates] = useState(true);
   const [loadingWatering, setLoadingWatering] = useState(true);
-  const [loadingFlags, setLoadingFlags] = useState(true);
 
   useEffect(() => {
     if (!treeId) return;
@@ -50,12 +48,6 @@ export default function TreeAnalyticsPage() {
       .then((data) => setWateringSummary(data.summary || []))
       .catch(console.error)
       .finally(() => setLoadingWatering(false));
-
-    fetch(`/api/analytics/flag-breakdown?treeId=${treeId}`)
-      .then((res) => res.json())
-      .then((data) => setFlagBreakdown(data.summary || []))
-      .catch(console.error)
-      .finally(() => setLoadingFlags(false));
   }, [treeId]);
 
   const Spinner = () => (
@@ -186,23 +178,28 @@ function TreeActivity({ treeId }) {
               </span>
             </div>
 
-            <div className="flex gap-2 text-sm">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
               <span
-                className={`px-2 py-1 rounded text-xs ${
-                  update.watered ? 'bg-green-700' : 'bg-red-700'
+                className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                  update.watered
+                    ? 'bg-green-950/80 text-green-400 border border-green-800/40'
+                    : 'bg-red-950/80 text-red-400 border border-red-800/40'
                 }`}
               >
                 {update.watered ? 'Watered' : 'Not Watered'}
               </span>
 
-              {update.flags?.length > 0 ? (
-                update.flags.map((flag, i) => (
-                  <span key={i} className="text-xl">
-                    {['🌴', '🐛', '⚠️', '🌧️'][flag]}
-                  </span>
-                ))
-              ) : (
-                <span className="text-xs text-gray-500 italic">No flags</span>
+              {Array.isArray(update.fertilizers) && update.fertilizers.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 ml-1">
+                  {update.fertilizers.map((f, i) => (
+                    <span
+                      key={i}
+                      className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-950 text-blue-300 border border-blue-800/50"
+                    >
+                      🧪 {f}
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
 

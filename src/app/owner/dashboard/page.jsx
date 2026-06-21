@@ -4,13 +4,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-// still used for read-only display on the cards
-const flagMap = {
-  0: "🌴",
-  1: "🐛",
-  2: "⚠️",
-  3: "🌧️",
-};
 
 export default function OwnerDashboard() {
   const [updates, setUpdates] = useState([]);
@@ -156,53 +149,64 @@ export default function OwnerDashboard() {
             <Link
               href={`/owner/tree/${update.treeId}`}
               key={`${update.treeId}-${index}`}
-              className="block bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-2 shadow-sm hover:bg-gray-800 transition"
+              className="block bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4 shadow-sm hover:border-green-600/50 hover:bg-gray-900/80 transition duration-200"
             >
-              <div className="flex justify-between items-center">
-                <span className="text-green-400 font-semibold">
-                  {update.treeId}
-                </span>
-
-                {/* Date + local time */}
-                <span className="text-xs text-gray-500">
+              {/* Top Row: Tree ID & Date */}
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Tree ID</span>
+                  <h3 className="text-lg font-bold text-green-400 mt-0.5">{update.treeId}</h3>
+                </div>
+                <span className="text-xs text-gray-400 bg-gray-950 px-2.5 py-1 rounded-md border border-gray-800">
                   {update.date}
-                  {update.createdAt
-                    ? ` · ${fmtLocalTime(update.createdAt)}`
-                    : ""}
+                  {update.createdAt ? ` · ${fmtLocalTime(update.createdAt)}` : ""}
                 </span>
               </div>
 
-              <div className="flex items-center gap-2 text-sm">
-                <span
-                  className={`px-2 py-1 rounded text-xs font-semibold ${
-                    update.watered ? "bg-green-700" : "bg-red-700"
-                  }`}
-                >
-                  {update.watered ? "Watered" : "Not Watered"}
-                </span>
+              {/* Status Section */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400 font-medium">Watering:</span>
+                  <span
+                    className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                      update.watered
+                        ? "bg-green-950/80 text-green-400 border border-green-800/40"
+                        : "bg-red-950/80 text-red-400 border border-red-800/40"
+                    }`}
+                  >
+                    {update.watered ? "Watered" : "Not Watered"}
+                  </span>
+                </div>
 
-                {/* read-only flags display retained */}
-                {Array.isArray(update.flags) && update.flags.length > 0 ? (
-                  update.flags.map((flag, i) => (
-                    <span key={i} className="text-xl">
-                      {flagMap[flag]}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-xs text-gray-500 italic">No flags</span>
-                )}
+                {/* Fertilizers applied */}
+                <div>
+                  <span className="block text-xs text-gray-400 font-medium mb-1.5">Fertilizers Applied:</span>
+                  {Array.isArray(update.fertilizers) && update.fertilizers.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {update.fertilizers.map((f, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-950 text-blue-300 border border-blue-800/50"
+                        >
+                          🧪 {f}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-500 italic">None</span>
+                  )}
+                </div>
               </div>
 
-              {update.notes && (
-                <p className="text-gray-300 text-sm">{update.notes}</p>
-              )}
-
+              {/* Image Preview */}
               {update.imageUrl && (
-                <img
-                  src={update.imageUrl}
-                  alt="tree"
-                  className="w-full h-40 object-cover rounded-lg border border-gray-700 mt-2"
-                />
+                <div className="relative rounded-lg overflow-hidden border border-gray-700 mt-2 aspect-video bg-black/20">
+                  <img
+                    src={update.imageUrl}
+                    alt="tree"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
               )}
             </Link>
           ))}

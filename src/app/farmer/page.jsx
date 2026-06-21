@@ -91,7 +91,7 @@ export default function FarmerPage() {
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-gray-50 border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-900"
             >
               <ClipboardList className="w-5 h-5" />
-              Fill Form
+              Trees Data
             </Link>
           </div>
           <div className="pt-[env(safe-area-inset-bottom)]" />
