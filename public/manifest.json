@@ -1,0 +1,16 @@
+{
+  "name": "Coconut Farm Application",
+  "short_name": "Coconut Farm",
+  "description": "Track coconut trees and yields online and offline.",
+  "start_url": "/farmer",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#16a34a",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

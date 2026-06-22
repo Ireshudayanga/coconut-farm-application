@@ -15,6 +15,7 @@ export default function ScannerPage() {
   const [deviceId, setDeviceId] = useState(undefined);
   const [tracker, setTracker] = useState('centerText');
   const [pause, setPause] = useState(false);
+  const [showScanner, setShowScanner] = useState(true);
   const devices = useDevices();
 
   const getTracker = () => {
@@ -32,20 +33,43 @@ export default function ScannerPage() {
 
   const handleScan = async (data) => {
     setPause(true);
+    setShowScanner(false); // Unmount scanner immediately to release camera stream!
+    
+    const isValidTreeIdFormat = (id) => {
+      return typeof id === 'string' && id.trim().toUpperCase().startsWith('TREE-');
+    };
+
     try {
       const response = await fetch(`/api/tree?id=${encodeURIComponent(data)}`);
-      const result = await response.json();
-
-      if (response.ok && result.exists) {
-        router.push(`/tree/${data}`);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.exists) {
+          router.push(`/tree/${data}`);
+        } else {
+          alert('❌ Tree ID not found in the database.');
+          setShowScanner(true);
+          setPause(false);
+        }
       } else {
-        alert('❌ Tree ID not found in the database.');
+        // Server error or DB offline. Allow if format matches.
+        if (isValidTreeIdFormat(data)) {
+          router.push(`/tree/${data}`);
+        } else {
+          alert('❌ Tree ID not found in the database.');
+          setShowScanner(true);
+          setPause(false);
+        }
       }
     } catch (error) {
-      console.error('Scan error:', error);
-      alert('Error checking tree ID.');
-    } finally {
-      setPause(false);
+      console.error('Scan error (offline or DB stopped):', error);
+      // Connection failure. Allow if format matches.
+      if (isValidTreeIdFormat(data)) {
+        router.push(`/tree/${data}`);
+      } else {
+        alert('❌ Connection failure and scanned ID is invalid.');
+        setShowScanner(true);
+        setPause(false);
+      }
     }
   };
 
@@ -80,25 +104,32 @@ export default function ScannerPage() {
         </div>
 
         {/* Scanner */}
-        <div className="flex justify-center">
-          <Scanner
-            formats={['qr_code']}
-            constraints={{ deviceId }}
-            onScan={(codes) => codes[0] && handleScan(codes[0].rawValue)}
-            onError={(err) => console.error('Scanner error:', err)}
-            styles={{ container: { height: '420px', width: '360px' } }}
-            components={{
-              audio: true,
-              onOff: true,
-              torch: true,
-              zoom: true,
-              finder: true,
-              tracker: getTracker(),
-            }}
-            allowMultiple={false}
-            scanDelay={2000}
-            paused={pause}
-          />
+        <div className="flex justify-center min-h-[420px] items-center">
+          {showScanner ? (
+            <Scanner
+              formats={['qr_code']}
+              constraints={{ deviceId }}
+              onScan={(codes) => codes[0] && handleScan(codes[0].rawValue)}
+              onError={(err) => console.error('Scanner error:', err)}
+              styles={{ container: { height: '420px', width: '360px' } }}
+              components={{
+                audio: true,
+                onOff: true,
+                torch: true,
+                zoom: true,
+                finder: true,
+                tracker: getTracker(),
+              }}
+              allowMultiple={false}
+              scanDelay={2000}
+              paused={pause}
+            />
+          ) : (
+            <div className="flex flex-col items-center space-y-3">
+              <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
+              <p className="text-gray-500 text-sm">Processing scan, releasing camera...</p>
+            </div>
+          )}
         </div>
 
         {/* Tip */}

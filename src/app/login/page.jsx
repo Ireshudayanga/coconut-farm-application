@@ -40,6 +40,31 @@ export default function FarmerLoginPage() {
       // ✅ Set cookie valid for 2 days
       document.cookie = `farmer_token=1; max-age=172800; path=/`;
       localStorage.setItem('farmerAuth', JSON.stringify({ username }));
+
+      // Fetch snapshot of DB elements for offline use
+      try {
+        const [settingsRes, fertilizersRes, pestsRes, tasksRes] = await Promise.all([
+          fetch('/api/settings').then(r => r.json()).catch(() => null),
+          fetch('/api/fertilizers').then(r => r.json()).catch(() => null),
+          fetch('/api/pests').then(r => r.json()).catch(() => null),
+          fetch('/api/tasks').then(r => r.json()).catch(() => null),
+        ]);
+        if (settingsRes?.settings) {
+          localStorage.setItem('cached_settings', JSON.stringify(settingsRes.settings));
+        }
+        if (fertilizersRes?.fertilizers) {
+          localStorage.setItem('cached_fertilizers', JSON.stringify(fertilizersRes.fertilizers));
+        }
+        if (pestsRes?.pests) {
+          localStorage.setItem('cached_pests', JSON.stringify(pestsRes.pests));
+        }
+        if (tasksRes?.tasks) {
+          localStorage.setItem('cached_tasks', JSON.stringify(tasksRes.tasks));
+        }
+      } catch (cacheErr) {
+        console.error('Offline pre-cache failed:', cacheErr);
+      }
+
       router.replace('/farmer');
     } catch (err) {
       console.error('Login error:', err);

@@ -21,7 +21,7 @@ const Navbar = () => {
           href="/"
           className="text-2xl font-bold text-green-400 hover:text-green-300 transition tracking-tight"
         >
-          🌴 TreeFarm
+          Tree Farm
         </Link>
 
         {/* Desktop Nav */}
@@ -38,7 +38,7 @@ const Navbar = () => {
           >
             Daily Update
           </Link>
-        
+
           {/* Logout Button */}
           <button
             onClick={handleLogout}
@@ -82,7 +82,7 @@ const Navbar = () => {
           >
             Daily Update
           </Link>
-        
+
           {/* Logout Button */}
           <button
             onClick={handleLogout}

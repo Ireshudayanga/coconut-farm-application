@@ -22,12 +22,19 @@ export default function TreeUpdatePage() {
 
         try {
           const res = await fetch(`/api/tree?id=${params.id}`);
-          const data = await res.json();
-
-          setIsValidTree(data.exists);
+          if (res.ok) {
+            const data = await res.json();
+            setIsValidTree(data.exists);
+          } else {
+            // DB stopped or server error. Allow if format matches.
+            const isFormatOk = params.id.trim().toUpperCase().startsWith('TREE-');
+            setIsValidTree(isFormatOk);
+          }
         } catch (error) {
           console.error('Error validating tree ID:', error);
-          setIsValidTree(false);
+          // Offline or network error. Allow if format matches.
+          const isFormatOk = params.id.trim().toUpperCase().startsWith('TREE-');
+          setIsValidTree(isFormatOk);
         }
 
         const now = new Date();

@@ -13,6 +13,7 @@ export async function POST(req) {
     const date = formData.get('date');
     const fertilizers = JSON.parse(formData.get('fertilizers') || '[]');
     const image = formData.get('image');
+    const farmerId = formData.get('farmerId') || 'unknown';
 
     let imageUrl = null;
 
@@ -31,6 +32,9 @@ export async function POST(req) {
       imageUrl = uploadResult.secure_url;
     }
 
+    const createdAtStr = formData.get('createdAt');
+    const createdAt = createdAtStr ? new Date(createdAtStr) : new Date();
+
     const db = (await clientPromise).db();
     await db.collection('updates').insertOne({
       treeId,
@@ -38,7 +42,8 @@ export async function POST(req) {
       fertilizers,
       date,            // YYYY-MM-DD string as you already use
       imageUrl,
-      createdAt: new Date(), // tie-breaker for same-day multiple updates
+      farmerId,
+      createdAt, // tie-breaker for same-day multiple updates
     });
 
     return NextResponse.json({ ok: true });
@@ -72,6 +77,7 @@ export async function GET(req) {
         createdAt: u.createdAt,           // 👈 expose to client (for UI tie-break if needed)
         imageUrl: u.imageUrl || null,
         fertilizers: u.fertilizers || [],
+        farmerId: u.farmerId || 'unknown',
       })),
     });
   } catch (err) {
