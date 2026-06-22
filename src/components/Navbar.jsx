@@ -114,6 +114,9 @@ const Navbar = () => {
           </Link>
         </div>
       )}
+
+      {/* Invisible link to force Next.js to prefetch and cache offline pages */}
+      <Link href="/tree-update" prefetch={true} style={{ display: 'none' }} />
     </nav>
   );
 };

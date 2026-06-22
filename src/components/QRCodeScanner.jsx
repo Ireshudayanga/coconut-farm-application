@@ -42,7 +42,7 @@ export default function ScannerPage() {
     // If offline, route instantly without fetch timeout delay
     if (typeof window !== 'undefined' && !navigator.onLine) {
       if (isValidTreeIdFormat(data)) {
-        router.push(`/tree/${data}`);
+        window.location.href = `/tree-update?id=${data}`;
       } else {
         alert('❌ Scanned Tree ID format is invalid.');
         setShowScanner(true);
@@ -61,7 +61,7 @@ export default function ScannerPage() {
       if (response.ok) {
         const result = await response.json();
         if (result.exists) {
-          router.push(`/tree/${data}`);
+          router.push(`/tree-update?id=${data}`);
         } else {
           alert('❌ Tree ID not found in the database.');
           setShowScanner(true);
@@ -70,7 +70,7 @@ export default function ScannerPage() {
       } else {
         // Server error or DB offline. Allow if format matches.
         if (isValidTreeIdFormat(data)) {
-          router.push(`/tree/${data}`);
+          window.location.href = `/tree-update?id=${data}`;
         } else {
           alert('❌ Tree ID not found in the database.');
           setShowScanner(true);
@@ -81,7 +81,7 @@ export default function ScannerPage() {
       console.error('Scan error (offline or DB stopped):', error);
       // Connection failure. Allow if format matches.
       if (isValidTreeIdFormat(data)) {
-        router.push(`/tree/${data}`);
+        window.location.href = `/tree-update?id=${data}`;
       } else {
         alert('❌ Connection failure and scanned ID is invalid.');
         setShowScanner(true);

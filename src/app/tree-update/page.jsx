@@ -1,35 +1,36 @@
 'use client';
 
-import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
 import DailyUpdateForm from '@/components/DailyUpdateForm';
 import { motion } from 'framer-motion';
 
-export default function TreeUpdatePage() {
-  const params = useParams();
+function TreeUpdateContent() {
+  const searchParams = useSearchParams();
+  const idParam = searchParams.get('id');
+  
   const [treeId, setTreeId] = useState(null);
   const [isValidTree, setIsValidTree] = useState(null);
   const [dateTime, setDateTime] = useState({
-
     date: '',
     time: '',
   });
 
   useEffect(() => {
     const fetchData = async () => {
-      if (params?.id && typeof params.id === 'string') {
-        setTreeId(params.id);
+      if (idParam && typeof idParam === 'string') {
+        setTreeId(idParam);
 
         // If we are offline, bypass fetch immediately to avoid timeout lag
         if (typeof window !== 'undefined' && !navigator.onLine) {
-          const isFormatOk = params.id.trim().toUpperCase().startsWith('TREE-');
+          const isFormatOk = idParam.trim().toUpperCase().startsWith('TREE-');
           setIsValidTree(isFormatOk);
         } else {
           try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 500); // Fast 500ms timeout
 
-            const res = await fetch(`/api/tree?id=${params.id}`, { signal: controller.signal });
+            const res = await fetch(`/api/tree?id=${idParam}`, { signal: controller.signal });
             clearTimeout(timeoutId);
 
             if (res.ok) {
@@ -37,13 +38,13 @@ export default function TreeUpdatePage() {
               setIsValidTree(data.exists);
             } else {
               // DB stopped or server error. Allow if format matches.
-              const isFormatOk = params.id.trim().toUpperCase().startsWith('TREE-');
+              const isFormatOk = idParam.trim().toUpperCase().startsWith('TREE-');
               setIsValidTree(isFormatOk);
             }
           } catch (error) {
             console.error('Error validating tree ID:', error);
             // Offline or network error. Allow if format matches.
-            const isFormatOk = params.id.trim().toUpperCase().startsWith('TREE-');
+            const isFormatOk = idParam.trim().toUpperCase().startsWith('TREE-');
             setIsValidTree(isFormatOk);
           }
         }
@@ -57,7 +58,7 @@ export default function TreeUpdatePage() {
     };
 
     fetchData();
-  }, [params]);
+  }, [idParam]);
 
   if (!treeId || isValidTree === null) {
     return (
@@ -100,5 +101,13 @@ export default function TreeUpdatePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function TreeUpdatePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-950 text-gray-400 flex items-center justify-center text-base">Loading form...</div>}>
+      <TreeUpdateContent />
+    </Suspense>
   );
 }
