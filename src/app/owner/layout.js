@@ -14,6 +14,7 @@ import {
   Bug,
   DatabaseBackup,
   Settings,
+  Clock
 } from 'lucide-react';
 import '@/app/globals.css';
 import { QrCode } from 'lucide-react';
@@ -27,6 +28,7 @@ const navItems = [
   { label: 'Pests', href: '/owner/pests', icon: <Bug className="w-5 h-5" /> },
   { label: 'QR Codes', href: '/owner/qr', icon: <QrCode className="w-5 h-5" /> },
   { label: 'Backup', href: '/owner/backup', icon: <DatabaseBackup className="w-5 h-5" /> },
+  { label: 'Sessions', href: '/owner/sessions', icon: <Clock className="w-5 h-5" /> },
   { label: 'Settings', href: '/owner/settings', icon: <Settings className="w-5 h-5" /> },
 ];
 
@@ -66,6 +68,7 @@ export default function OwnerLayout({ children }) {
     pathname === '/owner/pests' ||
     pathname === '/owner/qr' ||
     pathname === '/owner/backup' ||
+    pathname === '/owner/sessions' ||
     pathname === '/owner/settings';
 
   return (

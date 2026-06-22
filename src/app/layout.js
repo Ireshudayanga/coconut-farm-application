@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import './globals.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import SessionTracker from '../components/SessionTracker';
 import { usePathname } from 'next/navigation';
 
 export default function RootLayout({ children }) {
@@ -29,6 +30,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className="bg-gray-950 text-white">
         {!isOwnerRoute && <Navbar />}
+        {!isOwnerRoute && <SessionTracker />}
         <main className="min-h-screen">{children}</main>
         {!isOwnerRoute && <Footer />}
       </body>

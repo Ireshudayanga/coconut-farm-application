@@ -7,9 +7,23 @@ import { Menu, X } from 'lucide-react';
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const sessionId = sessionStorage.getItem('farmerSessionId');
+    if (sessionId) {
+      try {
+        await fetch('/api/sessions/end', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId })
+        });
+      } catch (err) {
+        console.error('Error ending session:', err);
+      }
+    }
+
     document.cookie = 'farmer_token=; Max-Age=0; path=/';
     localStorage.removeItem('farmerAuth');
+    sessionStorage.removeItem('farmerSessionId');
     location.href = '/login-choice';
   };
 
