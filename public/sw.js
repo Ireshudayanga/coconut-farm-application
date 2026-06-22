@@ -50,7 +50,8 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/_next/image')) {
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
-        const fetchPromise = fetch(event.request).then((networkResponse) => {
+        // Construct fetch options to reload cache, avoiding 304 Not Modified responses
+        const fetchPromise = fetch(new Request(event.request, { cache: 'reload' })).then((networkResponse) => {
           if (networkResponse.ok) {
             caches.open(STATIC_ASSETS_CACHE).then((cache) => {
               cache.put(event.request, networkResponse.clone());

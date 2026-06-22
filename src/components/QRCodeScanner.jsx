@@ -16,7 +16,8 @@ export default function ScannerPage() {
   const [tracker, setTracker] = useState('centerText');
   const [pause, setPause] = useState(false);
   const [showScanner, setShowScanner] = useState(true);
-  const devices = useDevices();
+  const devices = useDevices() || [];
+  const isIframe = typeof window !== 'undefined' && window.self !== window.top;
 
   const getTracker = () => {
     switch (tracker) {
@@ -122,7 +123,12 @@ export default function ScannerPage() {
 
         {/* Scanner */}
         <div className="flex justify-center min-h-[420px] items-center">
-          {showScanner ? (
+          {isIframe ? (
+            <div className="flex flex-col items-center space-y-3">
+              <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
+              <p className="text-gray-500 text-sm">Scanner pre-loading...</p>
+            </div>
+          ) : showScanner ? (
             <Scanner
               formats={['qr_code']}
               constraints={{ deviceId }}
