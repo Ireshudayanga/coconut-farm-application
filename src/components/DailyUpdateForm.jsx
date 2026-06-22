@@ -5,6 +5,59 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ImageUploader from './ImageUploader';
 
+// Native HTML5 Canvas image compression helper (Zero npm dependency, works offline)
+const compressImage = (file, maxWidth = 1024, maxHeight = 1024, quality = 0.7) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              reject(new Error('Canvas toBlob failed'));
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+};
+
 // Simple i18n dictionary (Sinhala default)
 const DICT = {
   si: {
@@ -178,10 +231,16 @@ export default function DailyUpdateForm({ treeId }) {
     try {
       let imageBlob = null;
       if (imageFile) {
+        let fileToStore = imageFile;
+        try {
+          fileToStore = await compressImage(imageFile, 800, 800, 0.6);
+        } catch (compErr) {
+          console.error('Offline image compression failed, using original:', compErr);
+        }
         imageBlob = await new Promise((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result);
-          reader.readAsDataURL(imageFile);
+          reader.readAsDataURL(fileToStore);
         });
       }
       const offlineQueue = JSON.parse(localStorage.getItem('offline_updates') || '[]');
@@ -225,6 +284,7 @@ export default function DailyUpdateForm({ treeId }) {
   // Submit Daily Log
   const handleDailySubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
     if (watered === null) {
       alert(lang === 'si' ? 'කරුණාකර ජලය දැමුවාද යන්න තෝරන්න.' : 'Please select if the tree was watered.');
       return;
@@ -255,9 +315,25 @@ export default function DailyUpdateForm({ treeId }) {
       formData.append('fertilizers', JSON.stringify(fertilizers));
       formData.append('pestNotes', selectedPest || '');
       formData.append('farmerId', farmerId);
-      if (imageFile) formData.append('image', imageFile);
+      if (imageFile) {
+        let fileToSend = imageFile;
+        try {
+          fileToSend = await compressImage(imageFile, 1024, 1024, 0.7);
+        } catch (compErr) {
+          console.error('Online image compression failed, using original:', compErr);
+        }
+        formData.append('image', fileToSend);
+      }
 
-      const res = await fetch('/api/daily-update', { method: 'POST', body: formData });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1500); // 1.5s fast timeout
+
+      const res = await fetch('/api/daily-update', { 
+        method: 'POST', 
+        body: formData,
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
 
       if (res.ok) {
         alert(t.success);
@@ -275,6 +351,7 @@ export default function DailyUpdateForm({ treeId }) {
   // Submit Harvest Log
   const handleHarvestSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
     if (!nutsCount || isNaN(nutsCount) || Number(nutsCount) < 0) {
       alert(lang === 'si' ? 'කරුණාකර වලංගු පොල් ගණනක් ඇතුළත් කරන්න.' : 'Please enter a valid count of nuts.');
       return;
@@ -306,11 +383,16 @@ export default function DailyUpdateForm({ treeId }) {
     }
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1000); // 1s fast timeout
+
       const res = await fetch('/api/harvests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
       if (res.ok) {
         alert(t.harvestSuccess);

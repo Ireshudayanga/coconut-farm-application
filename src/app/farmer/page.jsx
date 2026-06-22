@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { QrCode, CheckCircle, Circle, RefreshCw, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
+
+let globalSyncing = false;
 
 export default function FarmerPage() {
   const router = useRouter();
@@ -14,6 +16,7 @@ export default function FarmerPage() {
   const [syncing, setSyncing] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [hasCachedAssets, setHasCachedAssets] = useState(false);
+  const isSyncingRef = useRef(false);
 
   const preCacheAssets = async () => {
     if (typeof window !== 'undefined' && navigator.onLine) {
@@ -126,7 +129,7 @@ export default function FarmerPage() {
 
   const handleToggleTask = async (taskId, currentStatus) => {
     const newStatus = !currentStatus;
-    
+
     // Optimistic UI update
     setTasks(prev => {
       const updated = prev.map(t => t._id === taskId ? { ...t, completed: newStatus } : t);
@@ -176,11 +179,15 @@ export default function FarmerPage() {
   };
 
   const syncOfflineQueue = async () => {
+    if (globalSyncing) return;
+    if (isSyncingRef.current) return;
     if (syncing) return;
     if (typeof window !== 'undefined' && !navigator.onLine) {
       alert('⚠️ Cannot sync: You are currently offline. Please connect to the internet.');
       return;
     }
+    globalSyncing = true;
+    isSyncingRef.current = true;
     setSyncing(true);
 
     let hasErrors = false;
@@ -231,7 +238,7 @@ export default function FarmerPage() {
             const blob = await blobRes.blob();
             formData.append('image', blob, 'offline_photo.jpg');
           }
-          
+
           const res = await fetch('/api/daily-update', { method: 'POST', body: formData });
           if (!res.ok) {
             failedUpdates.push(upd);
@@ -277,11 +284,13 @@ export default function FarmerPage() {
     checkOfflineQueue();
     fetchTasks();
     setSyncing(false);
+    isSyncingRef.current = false;
+    globalSyncing = false;
 
     if (hasErrors) {
       alert('⚠️ Sync completed with errors. Some items failed to upload (the database/server might be unreachable) and remain stored locally.');
     } else {
-      alert('✅ All offline updates synced successfully!');
+      alert('All offline updates synced successfully!');
     }
   };
 
@@ -310,7 +319,7 @@ export default function FarmerPage() {
 
       {/* Main Container */}
       <main className="max-w-md mx-auto p-4 space-y-6">
-        
+
         {/* Offline Sync Widget */}
         {offlineCount > 0 && (
           <div className="bg-yellow-950/20 border border-yellow-900/50 p-4 rounded-xl flex items-center justify-between">

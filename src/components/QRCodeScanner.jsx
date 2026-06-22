@@ -39,8 +39,25 @@ export default function ScannerPage() {
       return typeof id === 'string' && id.trim().toUpperCase().startsWith('TREE-');
     };
 
+    // If offline, route instantly without fetch timeout delay
+    if (typeof window !== 'undefined' && !navigator.onLine) {
+      if (isValidTreeIdFormat(data)) {
+        router.push(`/tree/${data}`);
+      } else {
+        alert('❌ Scanned Tree ID format is invalid.');
+        setShowScanner(true);
+        setPause(false);
+      }
+      return;
+    }
+
     try {
-      const response = await fetch(`/api/tree?id=${encodeURIComponent(data)}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 500); // 500ms fast timeout
+
+      const response = await fetch(`/api/tree?id=${encodeURIComponent(data)}`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
       if (response.ok) {
         const result = await response.json();
         if (result.exists) {

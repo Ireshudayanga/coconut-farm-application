@@ -20,21 +20,32 @@ export default function TreeUpdatePage() {
       if (params?.id && typeof params.id === 'string') {
         setTreeId(params.id);
 
-        try {
-          const res = await fetch(`/api/tree?id=${params.id}`);
-          if (res.ok) {
-            const data = await res.json();
-            setIsValidTree(data.exists);
-          } else {
-            // DB stopped or server error. Allow if format matches.
+        // If we are offline, bypass fetch immediately to avoid timeout lag
+        if (typeof window !== 'undefined' && !navigator.onLine) {
+          const isFormatOk = params.id.trim().toUpperCase().startsWith('TREE-');
+          setIsValidTree(isFormatOk);
+        } else {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 500); // Fast 500ms timeout
+
+            const res = await fetch(`/api/tree?id=${params.id}`, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            if (res.ok) {
+              const data = await res.json();
+              setIsValidTree(data.exists);
+            } else {
+              // DB stopped or server error. Allow if format matches.
+              const isFormatOk = params.id.trim().toUpperCase().startsWith('TREE-');
+              setIsValidTree(isFormatOk);
+            }
+          } catch (error) {
+            console.error('Error validating tree ID:', error);
+            // Offline or network error. Allow if format matches.
             const isFormatOk = params.id.trim().toUpperCase().startsWith('TREE-');
             setIsValidTree(isFormatOk);
           }
-        } catch (error) {
-          console.error('Error validating tree ID:', error);
-          // Offline or network error. Allow if format matches.
-          const isFormatOk = params.id.trim().toUpperCase().startsWith('TREE-');
-          setIsValidTree(isFormatOk);
         }
 
         const now = new Date();

@@ -15,6 +15,23 @@ export async function POST(req) {
     const image = formData.get('image');
     const farmerId = formData.get('farmerId') || 'unknown';
 
+    const createdAtStr = formData.get('createdAt');
+    const createdAt = createdAtStr ? new Date(createdAtStr) : new Date();
+
+    const db = (await clientPromise).db();
+
+    // Check if this update has already been processed/synced to prevent duplicate uploads
+    const existing = await db.collection('updates').findOne({
+      treeId,
+      date,
+      farmerId,
+      createdAt,
+    });
+
+    if (existing) {
+      return NextResponse.json({ ok: true, duplicate: true });
+    }
+
     let imageUrl = null;
 
     if (image && typeof image === 'object') {
@@ -32,10 +49,6 @@ export async function POST(req) {
       imageUrl = uploadResult.secure_url;
     }
 
-    const createdAtStr = formData.get('createdAt');
-    const createdAt = createdAtStr ? new Date(createdAtStr) : new Date();
-
-    const db = (await clientPromise).db();
     await db.collection('updates').insertOne({
       treeId,
       watered,
