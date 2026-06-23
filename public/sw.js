@@ -1,5 +1,5 @@
-const CACHE_NAME = 'coconut-farm-cache-v2';
-const STATIC_ASSETS_CACHE = 'coconut-farm-static-v2';
+const CACHE_NAME = 'coconut-farm-cache-v3';
+const STATIC_ASSETS_CACHE = 'coconut-farm-static-v3';
 
 const ASSETS = [
   '/farmer',
@@ -46,23 +46,50 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // Cache Next.js static assets (JS, CSS chunks) with Stale-While-Revalidate
-  if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/_next/image')) {
+  // Cache Next.js static assets (JS, CSS chunks) with Cache-First (since they are immutable with build hashes)
+  if (url.pathname.startsWith('/_next/static/')) {
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
-        // Construct fetch options to reload cache, avoiding 304 Not Modified responses
-        const fetchPromise = fetch(new Request(event.request, { cache: 'reload' })).then((networkResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return fetch(event.request.clone()).then((networkResponse) => {
           if (networkResponse.ok) {
+            const resClone = networkResponse.clone();
             caches.open(STATIC_ASSETS_CACHE).then((cache) => {
-              cache.put(event.request, networkResponse.clone());
+              cache.put(event.request.clone(), resClone);
             });
           }
           return networkResponse;
         }).catch(() => {
-          // Network failed, silently ignore to use cache
+          return new Response('Offline and resource not cached', { status: 503, statusText: 'Service Unavailable' });
+        });
+      })
+    );
+    return;
+  }
+
+  // Cache Next.js dynamic images with Stale-While-Revalidate
+  if (url.pathname.startsWith('/_next/image')) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        const fetchPromise = Promise.resolve().then(() => {
+          if (!self.navigator.onLine) {
+            throw new Error('Offline');
+          }
+          return fetch(event.request.clone()).then((networkResponse) => {
+            if (networkResponse.ok) {
+              const resClone = networkResponse.clone();
+              caches.open(STATIC_ASSETS_CACHE).then((cache) => {
+                cache.put(event.request.clone(), resClone);
+              });
+            }
+            return networkResponse;
+          });
+        }).catch((err) => {
+          console.log('Background fetch failed or offline:', err);
         });
 
-        // Return cached response immediately if available, otherwise wait for network
         return cachedResponse || fetchPromise;
       })
     );

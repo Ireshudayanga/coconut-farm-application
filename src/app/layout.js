@@ -14,10 +14,21 @@ export default function RootLayout({ children }) {
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
+      navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
         .then((reg) => {
           console.log('SW registered:', reg.scope);
-          setSwRegistered(true);
+          // Wait until the service worker is active and controlling the client page
+          if (navigator.serviceWorker.controller) {
+            setSwRegistered(true);
+          } else {
+            const handleControllerChange = () => {
+              if (navigator.serviceWorker.controller) {
+                setSwRegistered(true);
+                navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
+              }
+            };
+            navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
+          }
         })
         .catch((err) => {
           console.warn('SW registration failed:', err);
