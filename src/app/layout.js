@@ -38,6 +38,12 @@ export default function RootLayout({ children }) {
       setSwRegistered(true);
     }
   }, []);
+  // Cache /farmer dynamically when active to allow offline navigation back to dashboard
+  useEffect(() => {
+    if (swRegistered && pathname === '/farmer') {
+      fetch('/farmer').catch((err) => console.warn('Failed to pre-fetch /farmer:', err));
+    }
+  }, [swRegistered, pathname]);
 
   return (
     <html lang="en">

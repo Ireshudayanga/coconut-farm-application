@@ -257,7 +257,7 @@ export default function DailyUpdateForm({ treeId }) {
 
       alert(lang === 'si' ? 'Offline: නැවත අන්තර්ජාල සබදතාවය ඇති වූ පසු යාවත්කාලීන වේ. එතෙක් දුරකතනයේ ගබඩාකරගනු ලබයි.' : 'Offline: Update saved locally. It will auto-sync when network is restored.');
       setSubmitting(false);
-      router.push('/farmer');
+      window.location.href = '/farmer';
     } catch (err) {
       console.error('Offline save failed:', err);
       alert('Failed to save update locally.');
@@ -273,7 +273,7 @@ export default function DailyUpdateForm({ treeId }) {
 
       alert(lang === 'si' ? 'Offline: නැවත අන්තර්ජාල සබදතාවය ඇති වූ පසු යාවත්කාලීන වේ. එතෙක් දුරකතනයේ ගබඩාකරගනු ලබයි.' : 'Offline: Harvest logged locally. It will auto-sync when network is restored.');
       setSubmitting(false);
-      router.push('/farmer');
+      window.location.href = '/farmer';
     } catch (err) {
       console.error('Offline save failed:', err);
       alert('Failed to save harvest locally.');
