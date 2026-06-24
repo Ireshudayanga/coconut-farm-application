@@ -7,8 +7,15 @@ import {
   outline,
   boundingBox,
   centerText,
+  setZXingModuleOverrides,
 } from '@yudiel/react-qr-scanner';
 import { useRouter } from 'next/navigation';
+
+if (typeof window !== 'undefined') {
+  setZXingModuleOverrides({
+    locateFile: (path) => `/zxing/${path}`,
+  });
+}
 
 export default function ScannerPage() {
   const router = useRouter();

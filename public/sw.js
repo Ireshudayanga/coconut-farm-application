@@ -1,5 +1,5 @@
-const CACHE_NAME = 'coconut-farm-cache-v3';
-const STATIC_ASSETS_CACHE = 'coconut-farm-static-v3';
+const CACHE_NAME = 'coconut-farm-cache-v4';
+const STATIC_ASSETS_CACHE = 'coconut-farm-static-v4';
 
 const ASSETS = [
   '/farmer',
@@ -7,6 +7,9 @@ const ASSETS = [
   '/daily-update',
   '/tree-update',
   '/favicon.ico',
+  '/zxing/zxing_reader.wasm',
+  '/zxing/zxing_full.wasm',
+  '/zxing/zxing_writer.wasm',
 ];
 
 self.addEventListener('install', (event) => {
