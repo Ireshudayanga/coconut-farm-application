@@ -1,5 +1,5 @@
-const CACHE_NAME = 'coconut-farm-cache-v4';
-const STATIC_ASSETS_CACHE = 'coconut-farm-static-v4';
+const CACHE_NAME = 'coconut-farm-cache-v5';
+const STATIC_ASSETS_CACHE = 'coconut-farm-static-v5';
 
 const ASSETS = [
   '/farmer',
@@ -66,6 +66,29 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         }).catch(() => {
           return new Response('Offline and resource not cached', { status: 503, statusText: 'Service Unavailable' });
+        });
+      })
+    );
+    return;
+  }
+
+  // Cache local zxing WASM files dynamically with Cache-First (they are static assets)
+  if (url.pathname.startsWith('/zxing/')) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return fetch(event.request.clone()).then((networkResponse) => {
+          if (networkResponse.ok) {
+            const resClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request.clone(), resClone);
+            });
+          }
+          return networkResponse;
+        }).catch(() => {
+          return new Response('Offline and WASM not cached', { status: 503, statusText: 'Service Unavailable' });
         });
       })
     );
