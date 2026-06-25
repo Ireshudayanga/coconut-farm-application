@@ -16,6 +16,7 @@ export default function FarmerPage() {
   const [syncing, setSyncing] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [hasCachedAssets, setHasCachedAssets] = useState(false);
+  const [isSlowConnection, setIsSlowConnection] = useState(false);
   const isSyncingRef = useRef(false);
 
   const preCacheAssets = async () => {
@@ -72,7 +73,18 @@ export default function FarmerPage() {
     try {
       const cached = localStorage.getItem('cached_tasks');
       if (cached) {
-        setTasks(JSON.parse(cached));
+        const cachedList = JSON.parse(cached);
+        const today = new Date();
+        const todayTasks = cachedList.filter((task) => {
+          if (!task.createdAt) return false;
+          const taskDate = new Date(task.createdAt);
+          return (
+            taskDate.getDate() === today.getDate() &&
+            taskDate.getMonth() === today.getMonth() &&
+            taskDate.getFullYear() === today.getFullYear()
+          );
+        });
+        setTasks(todayTasks);
       }
     } catch (e) {
       console.error('Failed to load cached tasks:', e);
@@ -93,22 +105,69 @@ export default function FarmerPage() {
       checkStatus();
     };
 
+    // Check connection speed via Network Information API where supported
+    let connCleanup = () => { };
+    if (typeof navigator !== 'undefined' && navigator.connection) {
+      const conn = navigator.connection;
+      const checkSpeed = () => {
+        const type = conn.effectiveType || '';
+        if (type === 'slow-2g' || type === '2g' || type === '3g') {
+          setIsSlowConnection(true);
+        } else {
+          setIsSlowConnection(false);
+        }
+      };
+      checkSpeed();
+      conn.addEventListener('change', checkSpeed);
+      connCleanup = () => conn.removeEventListener('change', checkSpeed);
+    }
+
     // Listen to network status
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      connCleanup();
     };
   }, []);
 
   const fetchTasks = async () => {
+    const startTime = Date.now();
     try {
       const res = await fetch("/api/tasks");
+      const duration = Date.now() - startTime;
+
+      if (res.ok) {
+        if (duration > 1500) {
+          setIsSlowConnection(true);
+        } else {
+          if (typeof navigator !== 'undefined' && navigator.connection) {
+            const type = navigator.connection.effectiveType || '';
+            setIsSlowConnection(type === 'slow-2g' || type === '2g' || type === '3g');
+          } else {
+            setIsSlowConnection(false);
+          }
+        }
+      }
+
       const data = await res.json();
       const list = data.tasks || [];
-      setTasks(list);
-      localStorage.setItem('cached_tasks', JSON.stringify(list));
+      
+      // Filter tasks to only include those assigned today
+      const today = new Date();
+      const todayTasks = list.filter((task) => {
+        if (!task.createdAt) return false;
+        const taskDate = new Date(task.createdAt);
+        return (
+          taskDate.getDate() === today.getDate() &&
+          taskDate.getMonth() === today.getMonth() &&
+          taskDate.getFullYear() === today.getFullYear()
+        );
+      });
+      
+      setTasks(todayTasks);
+      localStorage.setItem('cached_tasks', JSON.stringify(todayTasks));
     } catch (err) {
       console.error("Failed to load tasks:", err);
     } finally {
@@ -319,6 +378,18 @@ export default function FarmerPage() {
 
       {/* Main Container */}
       <main className="max-w-md mx-auto p-4 space-y-6">
+
+        {/* Slow Connection Suggestion Widget */}
+        {isSlowConnection && isOnline && (
+          <div className="bg-amber-955/25 border border-amber-900/40 p-4 rounded-xl space-y-1.5 shadow">
+            <h2 className="text-sm font-semibold text-amber-400 flex items-center gap-1.5">
+              Slow Connection Detected
+            </h2>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              Your network connection seems slow (3G/Edge). For a faster experience, you can **turn off your mobile data/Wi-Fi** to switch to **Offline Mode**.
+            </p>
+          </div>
+        )}
 
         {/* Offline Sync Widget */}
         {offlineCount > 0 && (
